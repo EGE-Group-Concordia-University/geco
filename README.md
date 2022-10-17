@@ -1,7 +1,9 @@
 # GECO
-GECO The general communication library
+GECO - The general communication library
 
 The GECO library is a a collection of C++ classes to facilitate the communication with IoT devices. It integrates a Tcl interpreter and provides a class for the construction of applications running GECO.
+
+[LabTk](https://github.com/EGE-Group-Concordia-University/labtk) is a cmmand line application which implements GECO.
 
 GECO was designed and tested on Linux Ubuntu and Raspian but is probably working on any Linux distribution.
 
