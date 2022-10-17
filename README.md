@@ -1,5 +1,5 @@
-# geco
-GECO the general communication library
+# GECO
+GECO The general communication library
 
 The GECO library is a a collection of C++ classes to facilitate the communication with IoT devices. It integrates a Tcl interpreter and provides a class for the construction of applications running GECO.
 
