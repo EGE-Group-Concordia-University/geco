@@ -62,7 +62,7 @@ using namespace std;
  
 static CONST char* geco_license =
 "   geCo the generic communication library\n"
-"   Copyright (c) 2015-2021, Rolf Wuthrich <rolf.wuthrich@concordia.ca>\n"
+"   Copyright (c) 2015-2022, Rolf Wuthrich <rolf.wuthrich@concordia.ca>\n"
 "   All rights reserved.\n "
 "   \n"
 "   Redistribution and use in source and binary forms, with or without\n"
@@ -706,10 +706,6 @@ void gecoApp::registerGlobalVars()
   commentStr=Tcl_Alloc(2);
   strcpy(commentStr, "#");
   Tcl_LinkVar(interp, "::geco::commentStr", (char *)&commentStr, TCL_LINK_STRING);
-
-  prompt=Tcl_Alloc(7);
-  strcpy(prompt, "geco> ");
-  Tcl_LinkVar(interp, "::geco::prompt", (char *)&prompt, TCL_LINK_STRING);
 }
 
 
@@ -801,66 +797,6 @@ gecoProcess* gecoApp::findGecoProcess(const char* PID)
       p=p->getNextGecoProcess();
     }
   return p;
-}
-
-
-/**
- * @brief Runs the geco process loop and implements a simple command line interface
-*/
-
-void gecoApp::run()
-{
-  Tcl_Channel inChannel  = Tcl_GetStdChannel(TCL_STDIN);
-  Tcl_Channel outChannel = Tcl_GetStdChannel(TCL_STDOUT);
-
-  Tcl_DString cmdline;
-  Tcl_DStringInit(&cmdline);
-  Tcl_DString Dstr_prompt;
-  Tcl_DStringInit(&Dstr_prompt);
-  Tcl_DStringAppend(&Dstr_prompt,prompt, -1);
-  Tcl_WriteChars(outChannel, Tcl_DStringValue(&Dstr_prompt), -1);
-
-  Tcl_Flush(outChannel);
-
-  while (1)
-    {
-      inChannel = Tcl_GetStdChannel(TCL_STDIN);
-
-      Tk_DoOneEvent(TK_DONT_WAIT);
-      Tcl_DoOneEvent(TCL_DONT_WAIT);
-     
-      if (Tcl_Gets(inChannel, &cmdline)<0)
-	{
-	  if (Tcl_InputBlocked(inChannel)) 
-	    {
-	      continue;
-	    }
-	}
-
-      if (Tcl_CommandComplete(Tcl_DStringValue(&cmdline)))
-	{
-	  Tcl_RecordAndEval(interp,Tcl_DStringValue(&cmdline),0);
-	  if (Tcl_GetStringResult(interp)!="")
-	    {
-	      Tcl_WriteChars(outChannel, Tcl_GetStringResult(interp) , -1);
-	      Tcl_WriteChars(outChannel, "\n", 1);
-	    }
-
-	  Tcl_DStringInit(&cmdline);
-	  Tcl_DStringInit(&Dstr_prompt);
-	  Tcl_DStringAppend(&Dstr_prompt,prompt, -1);
-	  Tcl_WriteChars(outChannel, Tcl_DStringValue(&Dstr_prompt), -1);
-	  Tcl_Flush(outChannel);
-	}
-      else       // tcl command is not yet complete
-	{
-	  Tcl_WriteChars(outChannel, "\t", 1);
-	  Tcl_Flush(outChannel);
-	}
-    }
-
-  Tcl_DStringFree(&Dstr_prompt);
-  Tcl_DStringFree(&cmdline);
 }
 
 

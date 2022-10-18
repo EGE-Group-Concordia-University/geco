@@ -72,5 +72,5 @@ file copy -force etc/geco.gecotkrc.tcl $etc_dir
 
 cd ..
 file copy -force AUTHORS $share_dir
-file copy -force COPYING $share_dir
+file copy -force LICENSE $share_dir
 
