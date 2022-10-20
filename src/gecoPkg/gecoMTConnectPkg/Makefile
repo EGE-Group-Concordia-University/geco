@@ -43,6 +43,10 @@ all: $(TARGET)
 clean:
 	rm -f *.o 
 	rm -f *.so
+    
+documentation: 
+	doxygen Doxyfile
+	cp -r html/* /var/www/html/gecoMTConnectPkg/
 
 install: $(TARGET)
 	cp $(TARGET) /usr/local/share/geco/pkg/
