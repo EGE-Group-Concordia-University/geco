@@ -30,6 +30,11 @@
 *.exe
 *.out
 *.app
+demoGecoApp
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+# Doxygen
+html/
+rtf/

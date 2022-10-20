@@ -43,7 +43,7 @@ make documentation
 You may wish to check the Makefile in order to put a suitable directory to copy the generated HTML documents for your particular system.
 The relevant line to check for is:
 ```
-cp -r html/* /var/www/html/ege/geco/
+cp -r html/* /var/www/html/geco/
 ```
 Change as needed the destination folder.
 
