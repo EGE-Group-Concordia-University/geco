@@ -1,9 +1,7 @@
-# $Id: Makefile 15 2014-01-03 18:49:04Z wuthrich $
-#
 # This is the geCo library Makefile
 #
 # (c) Rolf Wuthrich
-#     2015-2016 Concordia University
+#     2015-2022 Concordia University
 #
 # author:    Rolf Wuthrich
 # email:     rolf.wuthrich@concordia.ca
@@ -73,7 +71,7 @@ install: $(TARGET)
 	
 documentation: 
 	doxygen Doxyfile
-	cp -r html/* /var/www/html/ege/geco/
+	cp -r html/* /var/www/html/geco/
 
 $(TARGET): $(OBJS)
 	gcc $(OBJS) -shared -o $(TARGET) -lc
@@ -149,4 +147,3 @@ gecoPulse.o: gecoPulse.cc gecoPulse.h gecoGenerator.h
 
 gecoEnd.o: gecoEnd.cc gecoEnd.h 
 	$(CC) -c gecoEnd.cc
-

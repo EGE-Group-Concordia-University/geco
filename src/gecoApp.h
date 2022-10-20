@@ -179,6 +179,22 @@ class gecoTcpServer;          // forward definition
  * It demonstrates as well how to integrate a new gecoObj (see the documentation of gecoObj for the 
  * definition of this new gecoObj).
  * \include gecoAppEx.cc
+ * The new gecoObj is available in the application. For example one can obtain its related help
+ * by typing the following command in the CLI:
+ * \verbatim gecoObjEx -help \endverbatim
+ * which will return
+ * \verbatim
+ gecoObjEx2 - GecoObjEx
+ 
+ Valid options are:
+ 
+ -help                displays this message                                     
+ -name                returns name of process                                   
+ -info                returns info                                              
+ -comment             returns/sets a comment                                    
+ -x                   set/returns the value of x                                
+ -squareX             returns the square of x
+ \endverbatim
  * 
  */
 
