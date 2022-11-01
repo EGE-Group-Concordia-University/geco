@@ -36,8 +36,8 @@ public:
   
   void setDevice(char* NetDevice) 
   {
-    Tcl_DStringInit(netDevice); 
-	Tcl_DStringAppend(netDevice, NetDevice, -1);
+    Tcl_DStringInit(netDevice);
+    Tcl_DStringAppend(netDevice, NetDevice, -1);
   }
   Tcl_DString* getDevice() {return netDevice;}
   
@@ -155,10 +155,10 @@ void gecoNetTraff::terminate(gecoEvent* ev)
 
 long gecoNetTraff::RXtraffic()
 {
-	long traff;
-	devRX.seekg(ios_base::beg);
-	devRX >> traff;
-	return traff;
+    long traff;
+    devRX.seekg(ios_base::beg);
+    devRX >> traff;
+    return traff;
 }
 
 
@@ -167,10 +167,10 @@ long gecoNetTraff::RXtraffic()
 
 long gecoNetTraff::TXtraffic()
 {
-	long traff;
-	devTX.seekg(ios_base::beg);
-	devTX >> traff;
-	return traff;
+    long traff;
+    devTX.seekg(ios_base::beg);
+    devTX >> traff;
+    return traff;
 }
 //! [auxiliary functions]
 

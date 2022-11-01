@@ -32,7 +32,7 @@ gecoSquare::gecoSquare(gecoApp* App) :
     gecoObj("Square signal", "square", App),
     gecoGenerator("Square signal", "square", App)
 {
-  duration = 0.0;	 
+  duration = 0.0;
   addOption("-duration", &duration, "returns/sets signal duration (s)");
 }
 //! [Constructor]
