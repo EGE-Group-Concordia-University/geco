@@ -1,29 +1,56 @@
+<!-- ========================================================
+ 
+       MTConnect Device file for a DHT11 sensor
+       (c) Rolf Wuthrich
+           2022 Concordia University
+
+     ======================================================== -->
+
 <MTConnectDevices>
   <Devices>
-    <Device id="dht11_1" name="DHT11">
-      <Description>DHT11 Sensor</Description>
-      <Configuration>
-	<SensorConfiguration>
-	  <FirmwareVersion>2.34</FirmwareVersion>
-	  <Channels>
-	    <Channel number="1" name="Temp">
-	      <Description>Temperature in Celcius</Description>
-	      <CalibrationDate>2010-05-16</CalibrationDate>
-	      <NextCalibrationDate>2011-05-16</NextCalibrationDate>
-	      <CalibrationInitials>RW</CalibrationInitials>
-	    </Channel>
-	    <Channel number="2" name="Humi">
-	      <Description>Relative humidity in Percent</Description>
-	      <CalibrationDate>2010-05-16</CalibrationDate>
-	      <CalibrationInitials>RW</CalibrationInitials>
-	    </Channel>
-	  </Channels>
-	</SensorConfiguration>
-      </Configuration>
+    <Device uuid="DHT11-001" id="dht11_1" name="DHT11-1">
+
+      <!-- General information -->
+      <Description>
+         manufacturer="KeeYees"
+         model="KYES8-198-5"
+         DHT11 Sensor
+      </Description>
       <DataItems>
-	<DataItem category="SAMPLE" id="Temp" type="TEMPERATURE" units="CELCIUS"/>
-	<DataItem category="SAMPLE" id="Humi" type="HUMIDITY_REALTIVE" units="PERCENT"/>
+        <DataItem category="EVENT" id="avail" type="AVAILABILITY"/>
+        <DataItem category="EVENT" id="operator" subType="OPERATOR" type="USER"/>
       </DataItems>
+
+      <!-- Components -->
+      <Components>
+
+        <!-- Sensor -->
+        <Sensor id="dht11_sensor">
+
+          <!-- Configuration -->
+          <Configuration>
+            <SensorConfiguration>
+              <FirmwareVersion>2.34</FirmwareVersion>
+              <Channels>
+                 <Channel number="1" name="Temp">
+                   <Description>Temperature in Celcius</Description>
+                 </Channel>
+                 <Channel number="2" name="Humi">
+                   <Description>Relative humidity in Percent</Description>
+                 </Channel>
+              </Channels>
+            </SensorConfiguration>
+          </Configuration>
+
+          <!-- DataItems -->
+          <DataItems>
+            <DataItem category="SAMPLE" id="Temp" type="TEMPERATURE" units="CELCIUS"/>
+            <DataItem category="SAMPLE" id="Humi" type="HUMIDITY_RELATIVE" units="PERCENT" subType="ACTUAL"/>
+          </DataItems>
+
+        </Sensor>
+
+      </Components>
     </Device>
   </Devices>
 </MTConnectDevices>
