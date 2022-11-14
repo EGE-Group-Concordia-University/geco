@@ -22,6 +22,7 @@
 
 #include <tcl.h>
 #include <cstring>
+#include "gecoHelp.h"
 #include "gecoApp.h"
 #include "gecoMTCAdapter.h"
 
@@ -40,9 +41,61 @@ using namespace std;
 int geco_MTCAdapterCmd(ClientData clientData, Tcl_Interp *interp, 
 		       int objc,Tcl_Obj *const objv[])
 {
-  gecoMTCAdapter* proc  = new gecoMTCAdapter("MTConnect Adapter", "mtcadapter",
-					     7878, (gecoApp *)clientData);
-  return geco_CreateGecoProcessCmd(proc, objc, objv);
+  Tcl_ResetResult(interp);
+  gecoApp*        app=(gecoApp *)clientData;
+  gecoMTCAdapter* adap;
+
+  if (objc==1)
+    {
+      Tcl_WrongNumArgs(interp, 1, objv, "subcommand ?argument ...?");
+      return TCL_ERROR;
+    }
+
+  int index;
+  static CONST char* cmds[] = {"-help", "-open", NULL};
+  static CONST char* help[] = {"opens a MTConnect adapter", NULL};
+
+  if (Tcl_GetIndexFromObj(interp, objv[1], cmds, "subcommand", '0', &index)!=TCL_OK)
+    return TCL_ERROR;
+
+  int port;
+
+  switch (index)
+    {
+
+    case 0: // -help
+      if (objc!=2)
+	{
+	  Tcl_WrongNumArgs(interp, 2, objv, NULL);
+	  return TCL_ERROR;
+	}
+      gecoHelp(interp, "mtcadapter", "MTConnect adapter", cmds, help);
+      break;
+
+    case 1: // -open
+      if ((objc>4)||(objc<3))
+	{
+	  Tcl_WrongNumArgs(interp, 2, objv, "port ?cmdName?");
+	  return TCL_ERROR;
+	}
+
+      if (Tcl_GetIntFromObj(interp,objv[2], &port)!=TCL_OK) return TCL_ERROR;
+
+      if (objc==3)
+        adap = new gecoMTCAdapter("MTConnect Adapter", "mtcadapter", port, (gecoApp *)clientData);
+      
+      if (objc==4)
+	adap = new gecoMTCAdapter("MTConnect Adapter", Tcl_GetString(objv[3]), port, (gecoApp *)clientData, false);
+      
+      // adds the gecoProcess to the geco loop
+      app->addGecoProcess(adap);
+      Tcl_ResetResult(app->getInterp());
+      Tcl_AppendResult(app->getInterp(), adap->getID(), NULL);
+      break;
+
+    }
+  
+  return TCL_OK;
 }
 
 

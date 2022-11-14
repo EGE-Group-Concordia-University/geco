@@ -124,8 +124,8 @@ protected:
 
 public:
 
-  gecoMTCAdapter(const char* adaptName, const char* adaptCmd, int portID, gecoApp* App) :
-    gecoObj(adaptName, adaptCmd, App),
+  gecoMTCAdapter(const char* adaptName, const char* adaptCmd, int portID, gecoApp* App, bool addIDtoCmd = true) :
+    gecoObj(adaptName, adaptCmd, App, addIDtoCmd),
     gecoMTCBaseAdapter(adaptName, adaptCmd, portID, App)
   {
     firstSHDRInsn = NULL;
