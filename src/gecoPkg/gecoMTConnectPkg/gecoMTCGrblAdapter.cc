@@ -69,7 +69,7 @@ int geco_MTCGrblAdapterCmd(ClientData clientData, Tcl_Interp *interp,
 	  Tcl_WrongNumArgs(interp, 2, objv, NULL);
 	  return TCL_ERROR;
 	}
-      gecoHelp(interp,"mtcgrbladapter", "Grbl MTConnect adapter", cmds, help);
+      gecoHelp(interp, "mtcgrbladapter", "Grbl MTConnect adapter", cmds, help);
       break;
 
     case 1: // -open
@@ -82,17 +82,19 @@ int geco_MTCGrblAdapterCmd(ClientData clientData, Tcl_Interp *interp,
       if (Tcl_GetIntFromObj(interp,objv[2],&port)!=TCL_OK) return TCL_ERROR;
 
       if (objc==3)
-        adap = new gecoMTCGrblAdapter(port, "mtcgrbladapter", (gecoApp *)clientData); 
+        adap = new gecoMTCGrblAdapter(port, "mtcgrbladapter", (gecoApp *)clientData);
+      
       if (objc==4)
 	adap = new gecoMTCGrblAdapter(port, Tcl_GetString(objv[3]), (gecoApp *)clientData, false);
+      
+      // adds the gecoProcess to the geco loop
+      app->addGecoProcess(adap);
+      Tcl_ResetResult(app->getInterp());
+      Tcl_AppendResult(app->getInterp(), adap->getID(), NULL);
       break;
 
     }
   
-  // adds the gecoProcess to the geco loop
-  app->addGecoProcess(adap);
-  Tcl_ResetResult(app->getInterp());
-  Tcl_AppendResult(app->getInterp(), adap->getID(), NULL);
   return TCL_OK;
 }
 

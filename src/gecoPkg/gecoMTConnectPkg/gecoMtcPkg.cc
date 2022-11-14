@@ -29,7 +29,7 @@
 
 using namespace std;
 
-#define gecoMtcPkgVersion "1.0"
+#define gecoMtcPkgVersion "1.0.1"
 
 // ------------------------------------------------------------
 //
@@ -112,8 +112,8 @@ extern "C" {
     Tcl_AppendResult(interp,
     		     "+---------------------------------------------------+\n",
     		     "|            geCo MTConnect package                 |\n",
-    		     "|                  Version 1.0                      |\n",
-    		     "|           last modified April 2022                |\n",
+    		     "|                 Version 1.0.1                     |\n",
+    		     "|         last modified November 2022               |\n",
     		     "+---------------------------------------------------+\n",
     		     "| Copyright (C) 2022                                |\n",
     		     "| Rolf Wuthrich, Concordia University, Canada       |\n",
