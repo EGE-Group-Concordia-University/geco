@@ -148,6 +148,8 @@ public:
   virtual void         initialSHDR();
   virtual Tcl_DString* SHDR(bool forceSend = false);
 
+  void virtual addAgent(Tcl_Channel chan, const char* hostName);
+
   void      listLinkedVar();
   SHDRInsn* findLinkedTclVar(const char* TclVar);
 

@@ -94,7 +94,7 @@ public:
   virtual Tcl_DString* SHDR(bool forceSend = false);
   void sendSHDR(bool forceSend = false);
 
-  void addAgent(Tcl_Channel chan, const char* hostName);
+  void virtual addAgent(Tcl_Channel chan, const char* hostName);
   void removeAgent();
 
   void sendData(const char* SHDRdata, bool newLine = true);

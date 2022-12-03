@@ -242,7 +242,6 @@ int gecoMTCGrblAdapter::cmd(int &i,int objc,Tcl_Obj *const objv[])
 }
 
 
-
 /**
  * @copydoc gecoMTCAdapter::handleEvent
  *
@@ -313,7 +312,6 @@ Tcl_DString* gecoMTCGrblAdapter::info(const char* frontStr)
 }
 
 
-
 /**
  * @copydoc gecoMTCAdapter::initialSHDR
  */
@@ -381,6 +379,19 @@ Tcl_DString* gecoMTCGrblAdapter::SHDR(bool forceSend)
 }
 
 
+/**
+ * @copydoc gecoMTCAdapter::addAgent 
+ */
+
+void gecoMTCGrblAdapter::addAgent(Tcl_Channel chan, const char* hostName)
+{
+  gecoMTCAdapter::addAgent(chan, hostName);
+
+  if ((grblConnected) && (status==Active)) {
+    sendData("|grbl|NORMAL|Connected|||grbl controller connected");
+  }
+}
+
 
 /**
  * @copydoc gecoMTCAdapter::terminate
@@ -402,7 +413,6 @@ void gecoMTCGrblAdapter::terminate(gecoEvent* ev)
 
   // sends message to agent
   sendData("|grbl|FAULT|Disconnected|-1|HIGH|grbl controller disconnected");
-  sendData("|avail|UNAVAILABLE");
 }
 
 
@@ -425,7 +435,6 @@ void gecoMTCGrblAdapter::activate(gecoEvent* ev)
     sendData("|avail|UNAVAILABLE");
   }
 }
-
 
 
 /**
@@ -521,6 +530,7 @@ int gecoMTCGrblAdapter::handleGrblResponse()
   
   return ret;
 }
+
 
 /**
  * @brief Parse grbl status string to Tcl Variables
@@ -687,8 +697,9 @@ void gecoMTCGrblAdapter::setTclChannel(Tcl_Channel chan)
   sendData(getGrblVersion().c_str());
   // sets correct status report mask of grbl
   //sendgcode("$10=3");
+  // if active, sets avail
+  if (status==Active) sendData("|avail|AVAILABLE");
 }
-
 
 
 /**

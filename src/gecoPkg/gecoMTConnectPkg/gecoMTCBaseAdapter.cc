@@ -285,6 +285,7 @@ Tcl_DString* gecoMTCBaseAdapter::info(const char* frontStr)
 void gecoMTCBaseAdapter::terminate(gecoEvent* ev)
 {
   gecoProcess::terminate(ev);
+  sendData("|avail|UNAVAILABLE");
 }
 
 
@@ -300,6 +301,7 @@ void gecoMTCBaseAdapter::activate(gecoEvent* ev)
   gecoProcess::activate(ev);
   
   saveTime=ev->getT();
+  sendData("|avail|AVAILABLE");
   sendSHDR(true);
 }
 
@@ -388,6 +390,7 @@ void gecoMTCBaseAdapter::addAgent(Tcl_Channel chan, const char* hostName)
   Tcl_DStringInit(agentHost);
   Tcl_DStringAppend(agentHost, hostName, -1);
   connected = true;
+  if (status==Active) sendData("|avail|AVAILABLE");
 }
 
 

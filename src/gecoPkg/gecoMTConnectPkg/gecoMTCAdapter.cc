@@ -327,6 +327,16 @@ Tcl_DString* gecoMTCAdapter::SHDR(bool forceSend)
 
 
 /**
+ * @copydoc gecoMTCBaseAdapter::addAgent
+ */
+
+void gecoMTCAdapter::addAgent(Tcl_Channel chan, const char* hostName)
+{
+  gecoMTCBaseAdapter::addAgent(chan, hostName);
+}
+
+
+/**
  * @brief Lists all linked Tcl variables
  */
 
