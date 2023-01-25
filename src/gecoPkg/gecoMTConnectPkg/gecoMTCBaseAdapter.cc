@@ -252,7 +252,7 @@ void gecoMTCBaseAdapter::handleEvent(gecoEvent* ev)
   gecoProcess::handleEvent(ev);
 
   // If Active and connected to an agent sends SHDR data
-  if ((status==Active) && (connectedToAgent()) && ((ev->getT()-saveTime)>=dtSend))
+  if ((status==Active) && ((ev->getT()-saveTime)>=dtSend))
     {
       saveTime=ev->getT();
       sendSHDR();
@@ -364,9 +364,9 @@ Tcl_DString* gecoMTCBaseAdapter::SHDR(bool forceSend)
 
 void gecoMTCBaseAdapter::sendSHDR(bool forceSend)
 {
-  if ((connectedToAgent() == false) || (status!=Active)) return;
   Tcl_DString* shdr;
   shdr = SHDR(forceSend);
+  if ((connectedToAgent() == false) || (status!=Active)) return;
   if (strcmp(Tcl_DStringValue(shdr), "")!=0)
     {
       Tcl_WriteChars(agentID, Tcl_DStringValue(shdr), -1);
