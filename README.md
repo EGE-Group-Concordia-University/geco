@@ -23,7 +23,7 @@ sudo apt-get install libcomedi-dev
 
 ## Building
 
-Using make, in the directory containing the GECO Makfile:
+Invoke make, in the directory containing the GECO Makfile:
 ```
 make
 ```
