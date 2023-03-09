@@ -102,6 +102,7 @@ public:
   int              getPort() {return port;}
   bool             connectedToAgent() {return connected;}
   Tcl_DString*     getAgentHost() {return agentHost;}
+  Tcl_Channel      getAgentTCPsocket() {return agentID;}
 };
 
 #endif /* gecoMTCBaseAdapter_SEEN_ */

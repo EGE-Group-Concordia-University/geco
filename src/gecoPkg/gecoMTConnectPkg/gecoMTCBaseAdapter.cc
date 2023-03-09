@@ -33,15 +33,6 @@ using namespace std;
 // Callback procedures
 //
 
-// Needed internaly for callback procedures
-
-struct AgentConnection
-{
-  gecoMTCBaseAdapter* adapter;
-  Tcl_Channel         agentChan;
-  gecoApp*            app;
-};
-
 
 // Callback procedure called when Tcl_Channel to agent is closed
 //
@@ -60,11 +51,9 @@ void AgentTclChannelClosed(ClientData clientData)
 
 void AgentTrsm(ClientData clientData, int mask)
 {
-  AgentConnection*    conn = (AgentConnection *)clientData;
-  gecoApp*            app  = conn->app;
-  Tcl_Channel         chan = conn->agentChan;
-  gecoMTCBaseAdapter* adap = conn->adapter;
-  
+  gecoMTCBaseAdapter* adap = (gecoMTCBaseAdapter *)clientData;
+  Tcl_Channel         chan = adap->getAgentTCPsocket();
+
   // checks if connection was closed by agent
   if (Tcl_Eof(chan)) {
     Tcl_UnregisterChannel(adap->getTclInterp(), chan);  // will trigger AgentTclChannelClosed
@@ -88,7 +77,7 @@ void AgentTrsm(ClientData clientData, int mask)
   delete str;
   
   // reschedule file handler 
-  int chanID;
+  long int chanID;
   Tcl_GetChannelHandle(chan, TCL_READABLE, (ClientData*)&chanID);
   Tcl_CreateFileHandler(chanID, TCL_READABLE, AgentTrsm, clientData);
 }
@@ -123,21 +112,14 @@ void AgentConnect(ClientData clientData, Tcl_Channel channel, char *hostName, in
   adapter->sendData("* shdrVersion: 1");
   adapter->initialSHDR();
   adapter->sendSHDR(true);
-  
-  // Gets Tcl channel ID of agent
-  int chanID;
-  Tcl_GetChannelHandle(channel, TCL_READABLE, (ClientData*)&chanID);
-  
-  AgentConnection* connection = new AgentConnection();
-  connection->adapter = adapter;
-  connection->agentChan = channel;
-  connection->app = adapter->getGecoApp();
 
   // Set up a callback for when agent disconnects
   Tcl_CreateCloseHandler(channel, AgentTclChannelClosed, (ClientData)adapter);
-  
+
   // Set up a callback for when agent sends data
-  Tcl_CreateFileHandler(chanID, TCL_READABLE, AgentTrsm, (ClientData)connection);
+  long int chanID;
+  Tcl_GetChannelHandle(channel, TCL_READABLE, (ClientData*)&chanID);
+  Tcl_CreateFileHandler(chanID, TCL_READABLE, AgentTrsm, (ClientData)adapter);
 }
 
 
