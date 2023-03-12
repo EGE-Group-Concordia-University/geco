@@ -112,6 +112,7 @@ protected:
   long          lineNbr;          /*!< absolute line number wihtin gcode file under execution */
   bool          cycle;            /*!< True if cycle is running */
   Tcl_DString*  nextBlock;        /*!< Next gcode block that will be exectuted */
+  int           grblBfsize;       /*!< Grbl buffer stize */
   int           grblBf;           /*!< Grbl buffer status */
   Tcl_DString*  lastErrorCode;    /*!< Last error message of grbl */
   int           lastGrblStatus;   /*!< Last grbl status */
@@ -135,6 +136,7 @@ public:
     cycle = false;
     lineNbr = 0;
     n_fail = 0;
+    grblBfsize = 15;
     lastGrblStatus = GRBL_UNDEFINED;
 
     // links default variables
@@ -147,6 +149,7 @@ public:
     Tcl_LinkVar(interp, "Bf", (char *)&grblBf, TCL_LINK_INT);
     
     addOption("-grbl", "returns/sets Tcl socket to grbl controller");
+    addOption("-grblBufferSize", &grblBfsize, "returns/sets grbl buffer size");
     addOption("-homing-cycle", "runs a homing cycle");
     addOption("-sendgcode", "sends g-code to the grbl controller");
     addOption("-gcodefile", gcodeFileName, "returns/sets g-code program file name to read from");
