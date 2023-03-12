@@ -264,7 +264,7 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent* ev)
   
   if (cycle)
     {
-      if ((grblBf==14)||(grblBf==15))
+      if ((grblBf==grblBfsize-1)||(grblBf==grblBfsize))
 	{
 	  // message to agent
 	  sendData("|block|", false);
@@ -624,7 +624,7 @@ void gecoMTCGrblAdapter::startCycle()
   Tcl_DStringAppend(str, "|line|1", -1);
   Tcl_WriteChars(grblChan, block.c_str(), -1);
   Tcl_WriteChars(grblChan, "\n", -1);
-  grblBf=14;
+  grblBf=grblBfsize-1;
 
   // sends second block
   Tcl_DStringFree(nextBlock);
@@ -633,7 +633,7 @@ void gecoMTCGrblAdapter::startCycle()
       Tcl_WriteChars(grblChan, block.c_str(), -1);
       Tcl_WriteChars(grblChan, "\n", -1);
       Tcl_DStringAppend(nextBlock, block.c_str(), -1);
-      grblBf=13;
+      grblBf=grblBfsize-2;
     }
   else
     {
