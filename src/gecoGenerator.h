@@ -26,7 +26,7 @@
 #ifndef gecoGenerator_SEEN_
 #define gecoGenerator_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include <stdio.h>
 #include "gecoProcess.h"
 

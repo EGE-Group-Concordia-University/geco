@@ -24,7 +24,7 @@
 #ifndef gecoIOTCP_SEEN_
 #define gecoIOTCP_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include "gecoIOSocket.h"
 
 using namespace std;

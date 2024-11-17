@@ -25,7 +25,7 @@
 #ifndef gecoIOSocket_SEEN_
 #define gecoIOSocket_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include "gecoIOModule.h"
 
 using namespace std;

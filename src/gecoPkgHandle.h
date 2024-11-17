@@ -24,7 +24,7 @@
 #define gecoPkgHandle_SEEN_
 
 #include <dlfcn.h>
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include <vector>
 #include "gecoApp.h"
 #include "gecoObj.h"

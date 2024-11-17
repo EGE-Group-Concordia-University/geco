@@ -26,7 +26,7 @@
 #ifndef gecoUProc_SEEN_
 #define gecoUProc_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include <stdio.h>
 #include "gecoProcess.h"
 #include "gecoApp.h"

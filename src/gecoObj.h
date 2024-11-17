@@ -28,7 +28,7 @@
 #ifndef gecoObj_SEEN_
 #define gecoObj_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include <vector>
 #include "gecoApp.h"
 

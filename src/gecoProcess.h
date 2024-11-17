@@ -28,7 +28,7 @@
 #define gecoProcess_SEEN_
 
 #include <sys/time.h>
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include "gecoEvent.h"
 #include "gecoObj.h"
 #include "gecoApp.h"

@@ -24,7 +24,7 @@
 #ifndef gecoHelp_SEEN_
 #define gecoHelp_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 
 using namespace std;
 

@@ -1,13 +1,10 @@
-# $Id: Makefile 15 2014-01-03 18:49:04Z wuthrich $
-#
 # This is the gecoDemoPkg Makefile
 #
 # (c) Rolf Wuthrich
-#     2016 Concordia University
+#     2016-2024 Concordia University
 #
 # author:    Rolf Wuthrich
 # email:     rolf.wuthrich@concordia.ca
-# $Revision: 15 $
 #
 # This software is copyright under the BSD license
 #
@@ -17,6 +14,7 @@
 # Date       Modification                     Author
 #----------------------------------------------------------
 # 05.02.2016 Creation                         R. Wuthrich
+# 17.11.2024 Fix tcl.h and tk.h imports       R. Wuthrich
 #----------------------------------------------------------
 
 # module version
@@ -26,7 +24,7 @@ modVer = 1.0
 TARGET = libgecoDemoPkg$(modVer).so
 
 # complier with options
-CC = gcc -fPIC -I /usr/include/tcl8.5 -I /usr/local/include/geco1.0
+CC = gcc -fPIC -I /usr/include/tcl8.6 -I /usr/local/include/geco1.0
 
 # --------------------------------------------------------------
 # List of all object files to be included into the geco library
@@ -46,7 +44,7 @@ install: $(TARGET)
 	ldconfig
 
 $(TARGET): $(OBJS)
-	gcc $(OBJS) -shared -o $(TARGET) -lc -lgeco1.0 -ltcl8.5
+	gcc $(OBJS) -shared -o $(TARGET) -lc -lgeco1.0 -ltcl8.6
 
 gecoDemoPkg.o: gecoDemoPkg.cc gecoDemoPkg.h
 	$(CC) -c gecoDemoPkg.cc

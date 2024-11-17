@@ -27,7 +27,7 @@
 #ifndef gecoMemStream_SEEN_
 #define gecoMemStream_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include "gecoProcess.h"
 #include "gecoApp.h"
 

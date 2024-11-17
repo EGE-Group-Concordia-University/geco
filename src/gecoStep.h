@@ -27,7 +27,7 @@
 #ifndef gecoStep_SEEN_
 #define gecoStep_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include <stdio.h>
 #include "gecoGenerator.h"
 

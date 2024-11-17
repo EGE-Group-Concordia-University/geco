@@ -25,8 +25,8 @@
 #ifndef gecoApp_SEEN_
 #define gecoApp_SEEN_
 
-#include <tcl.h>
-#include <tk.h>
+#include <tcl8.6/tcl.h>
+#include <tcl8.6/tk.h>
 #include "gecoEvent.h"
 
 using namespace std;

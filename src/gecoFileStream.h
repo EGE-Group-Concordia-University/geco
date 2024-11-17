@@ -27,7 +27,7 @@
 #ifndef gecoFileStream_SEEN_
 #define gecoFileStream_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include <fstream>
 #include "gecoProcess.h"
 #include "gecoApp.h"

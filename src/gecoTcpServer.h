@@ -27,7 +27,7 @@
 #ifndef gecoTcpServer_SEEN_
 #define gecoTcpServer_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include <stdio.h>
 #include "gecoObj.h"
 #include "gecoApp.h"

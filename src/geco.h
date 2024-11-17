@@ -1,15 +1,14 @@
 // This may look like C code, but it is really -*- C++ -*-
-// $Id: ECApp.h 15 2014-01-03 18:49:04Z wuthrich $
 // ---------------------------------------------------------------- 
 //                                                                  
 // Header file for the geCo library
 //
 // (c) Rolf Wuthrich
-//     2015-2020 Concordia University
+//     2015-2024 Concordia University
 //
 // author:  Rolf Wuthrich
 // email:   rolf.wuthrich@concordia.ca
-// version: v2 ($Revision: 15 $)
+// version: v2
 //
 // This software is copyright under the BSD license
 //
@@ -20,13 +19,14 @@
 // ---------------------------------------------------------------
 // 12.10.2015 Creation                         R. Wuthrich
 // 21.11.2020 Added DOxygen documentation      R. Wuthrich
+// 17.11.2024 Fix tcl.h and tk.h imports       R. Wuthrich
 // ---------------------------------------------------------------
 
 #ifndef geco_SEEN_
 #define geco_SEEN_
 
-#include <tcl.h>
-#include <tk.h>
+#include <tcl8.6/tcl.h>
+#include <tcl8.6/tk.h>
 #include "gecoHelp.h"
 #include "gecoEvent.h"
 #include "gecoObj.h"

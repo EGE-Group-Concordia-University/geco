@@ -27,7 +27,7 @@
 #ifndef gecoEnd_SEEN_
 #define gecoEnd_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include "gecoProcess.h"
 #include "gecoApp.h"
 

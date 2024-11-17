@@ -27,7 +27,7 @@
 #ifndef gecoIO_SEEN_
 #define gecoIO_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include "gecoProcess.h"
 #include "gecoIOModule.h"
 

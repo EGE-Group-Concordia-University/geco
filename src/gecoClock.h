@@ -26,7 +26,7 @@
 #ifndef gecoClock_SEEN_
 #define gecoClock_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include "gecoProcess.h"
 
 using namespace std;

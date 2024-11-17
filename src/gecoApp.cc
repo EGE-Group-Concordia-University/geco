@@ -1,14 +1,13 @@
-// $Id: ECApp.cc 27 2014-03-16 17:58:36Z wuthrich $
 // ---------------------------------------------------------------
 //
 // Definition of the class gecoApp
 //
 // (c) Rolf Wuthrich
-//     2015 - 2020 Concordia University
+//     2015 - 2024 Concordia University
 //
 // author:  Rolf Wuthrich
 // email:   rolf.wuthrich@concordia.ca
-// version: v1 ($Revision: 27 $)
+// version: v1
 //
 // This software is copyright under the BSD license
 //  
@@ -19,6 +18,7 @@
 // ---------------------------------------------------------------
 // 12.10.2015 Creation                         R. Wuthrich
 // 21.11.2020 Added DOxygen documentation      R. Wuthrich
+// 17.11.2024 Fix tcl.h and tk.h imports       R. Wuthrich
 //
 // ---------------------------------------------------------------
 
@@ -62,7 +62,7 @@ using namespace std;
  
 static CONST char* geco_license =
 "   geCo the generic communication library\n"
-"   Copyright (c) 2015-2022, Rolf Wuthrich <rolf.wuthrich@concordia.ca>\n"
+"   Copyright (c) 2015-2024, Rolf Wuthrich <rolf.wuthrich@concordia.ca>\n"
 "   All rights reserved.\n "
 "   \n"
 "   Redistribution and use in source and binary forms, with or without\n"

@@ -27,7 +27,7 @@
 #ifndef gecoTrigger_SEEN_
 #define gecoTrigger_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include <stdio.h>
 #include "gecoProcess.h"
 

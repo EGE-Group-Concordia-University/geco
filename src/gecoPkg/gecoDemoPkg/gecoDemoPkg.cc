@@ -1,10 +1,9 @@
-// $Id: ECIOBoard.cc 37 2015-01-09 12:35:29Z wuthrich $
 // ---------------------------------------------------------------
 //
 // gecoDemoPkg : a demo geCo-package
 //
 // (c) Rolf Wuthrich
-//     2016 Concordia University
+//     2016-2024 Concordia University
 //
 // author:    Rolf Wuthrich
 // email:     rolf.wuthrich@concordia.ca
@@ -18,10 +17,11 @@
 // Date       Modification                     Author
 // ---------------------------------------------------------------
 // 05.02.2016 Creation                         R. Wuthrich
+// 17.11.2024 Fix tcl.h and tk.h imports       R. Wuthrich
 // ---------------------------------------------------------------
 
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include "gecoDemoPkg.h"
 #include "geco.h"
 
@@ -36,7 +36,7 @@ using namespace std;
 
 static CONST char* gecoDemoPkg_license =
 "   gecoDemoPkg a demo geCo-package\n"
-"   Copyright (c) 2016, Rolf Wuthrich <rolf.wuthrich@concordia.ca>\n"
+"   Copyright (c) 2016-2024, Rolf Wuthrich <rolf.wuthrich@concordia.ca>\n"
 "   All rights reserved.\n "
 "   \n"
 "   Redistribution and use in source and binary forms, with or without\n"
@@ -105,9 +105,9 @@ extern "C" {
     		     "+---------------------------------------------------+\n",
     		     "|              geCo demo package                    |\n",
     		     "|                  Version 1.0                      |\n",
-    		     "|          last modified February 2016              |\n",
+    		     "|          last modified November 2024              |\n",
     		     "+---------------------------------------------------+\n",
-    		     "| Copyright (C) 2016                                |\n",
+    		     "| Copyright (C) 2016-2024                           |\n",
     		     "| Rolf Wuthrich, Concordia University, Canada       |\n",
     		     "| This is free software                             |\n",
     		     "| Type 'puts $::demoPkg::license' for more details  |\n",
@@ -142,6 +142,3 @@ extern "C" {
 //
 // TODO : implement here the routines of your package
 //
-
-
-

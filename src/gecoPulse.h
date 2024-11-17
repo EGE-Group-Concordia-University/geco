@@ -27,7 +27,7 @@
 #ifndef gecoPulse_SEEN_
 #define gecoPulse_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include <stdio.h>
 #include "gecoGenerator.h"
 

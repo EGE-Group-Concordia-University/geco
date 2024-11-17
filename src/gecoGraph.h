@@ -27,7 +27,7 @@
 #ifndef gecoGraph_SEEN_
 #define gecoGraph_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include <stdio.h>
 #include <fstream>
 #include <limits.h>	      // for PATH_MAX 

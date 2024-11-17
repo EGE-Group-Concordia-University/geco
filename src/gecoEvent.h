@@ -26,7 +26,7 @@
 #ifndef gecoEvent_SEEN_
 #define gecoEvent_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include <iostream>
 
 using namespace std;

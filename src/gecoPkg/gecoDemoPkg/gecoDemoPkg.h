@@ -1,15 +1,13 @@
 // This may look like C code, but it is really -*- C++ -*-
-// $Id: ECIOBoard.h 37 2015-01-09 12:35:29Z wuthrich $
 // ---------------------------------------------------------------- 
 //                                                                  
 // Header file for the gecoDemoPkg
 //
 // (c) Rolf Wuthrich
-//     2016 Concordia University
+//     2016-2024 Concordia University
 //
 // author:    Rolf Wuthrich
 // email:     rolf.wuthrich@concordia.ca
-// version:   v1 ($Revision: 37 $)
 //
 // This software is copyright under the BSD license
 //
@@ -19,12 +17,13 @@
 // Date       Modification                     Author
 // ---------------------------------------------------------------
 // 05.02.2016 Creation                         R. Wuthrich
+// 17.11.2024 Fix tcl.h and tk.h imports       R. Wuthrich
 // ---------------------------------------------------------------
 
 #ifndef GECODEMOPKG_SEEN_
 #define GECODEMOPKG_SEEN_
 
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include "geco.h"
 
 using namespace std;
