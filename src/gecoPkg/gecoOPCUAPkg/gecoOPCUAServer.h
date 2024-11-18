@@ -76,7 +76,7 @@ protected:
     LinkedVariable *firstLinkedVariable;
 
 public:
-    gecoOPCUAServer(const char *serverName, const char *serverCmd, int portID, gecoApp *App);
+    gecoOPCUAServer(const char *serverName, const char *serverCmd, int portID, gecoApp *App, bool addID=true);
     virtual ~gecoOPCUAServer();
 
     virtual int cmd(int &i, int objc, Tcl_Obj *const objv[]);

@@ -104,7 +104,7 @@ int gecoOPCUAServerCmd(ClientData clientData, Tcl_Interp *interp,
       opcuaserver = new gecoOPCUAServer("OPC UA Server", "opcuaserver", port, (gecoApp *)clientData);
 
     if (objc == 4)
-      opcuaserver = new gecoOPCUAServer("OPC UA Server", Tcl_GetString(objv[3]), port, (gecoApp *)clientData);
+      opcuaserver = new gecoOPCUAServer("OPC UA Server", Tcl_GetString(objv[3]), port, (gecoApp *)clientData, false);
 
     // adds the gecoProcess to the geco loop
     app->addGecoProcess(opcuaserver);
@@ -167,8 +167,8 @@ LinkedVariable::~LinkedVariable()
 // ---- CONSTRUCTOR
 //
 
-gecoOPCUAServer::gecoOPCUAServer(const char *serverName, const char *serverCmd, int portID, gecoApp *App) : gecoObj(serverName, serverCmd, App),
-                                                                                                            gecoProcess(serverName, "user", serverCmd, App)
+gecoOPCUAServer::gecoOPCUAServer(const char *serverName, const char *serverCmd, int portID, gecoApp *App, bool addID) : gecoObj(serverName, serverCmd, App, addID),
+                                                                                                                        gecoProcess(serverName, "user", serverCmd, App)
 {
   firstLinkedVariable = NULL;
   port = portID;
