@@ -24,7 +24,7 @@
 
 #include <cstring>
 #include <sys/time.h>
-#include <tcl.h>
+#include <tcl8.6/tcl.h>
 #include "gecoProcess.h"
 #include "gecoApp.h"
 
@@ -155,6 +155,12 @@ int gecoProcess::cmd(int &i, int objc,Tcl_Obj *const objv[])
       sprintf(str, "%s", getStatusStr());
       Tcl_AppendResult(interp, str, NULL);
       i++;
+    }
+
+  if (index>10000)
+    {
+      printf("ERROR: check code of your cmd method. Seems you are in an infinite loop\n");
+      exit(1);
     }
 
   return index;
