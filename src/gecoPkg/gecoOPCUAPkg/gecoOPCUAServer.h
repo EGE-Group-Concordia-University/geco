@@ -57,6 +57,39 @@ public:
 
 // -----------------------------------------------------------------------
 //
+// Class to store linked server commands
+//
+
+/**
+ * @brief A class to store OPC UA server commands
+ *
+ * The OPCUACmd class stores commands
+ * for the usage of the gecoOPCUAServer class.
+ */
+
+class OPCUACmd
+{
+
+    friend class gecoOPCUAServer;
+
+private:
+    OPCUACmd *next;
+
+protected:
+    Tcl_DString *cmd;
+    gecoApp *app;
+
+public:
+    OPCUACmd(const char *Srv_Cmd, gecoApp *geco_app);
+    ~OPCUACmd();
+
+    OPCUACmd *getNext() { return next; }
+    char *getCmd() { return Tcl_DStringValue(cmd); }
+    gecoApp *getGecoApp() { return app; }
+};
+
+// -----------------------------------------------------------------------
+//
 // class gecoOPCUAServer
 //
 
@@ -69,18 +102,19 @@ protected:
     Tcl_DString *browseName;
     Tcl_DString *displayName;
 
-    UA_Server *server;    // OPC UA server
-    UA_NodeId topNodeId;  // Top node in server
-    UA_UInt16 ns_idx;     // Server namesapce index
+    UA_Server *server;   // OPC UA server
+    UA_NodeId topNodeId; // Top node in server
+    UA_UInt16 ns_idx;    // Server namesapce index
     pthread_t thread;
     LinkedVariable *firstLinkedVariable;
+    OPCUACmd *firstOPCUACmd; // Pointer to list of server commands
 
 public:
-    gecoOPCUAServer(const char *serverName, const char *serverCmd, int portID, gecoApp *App, bool addID=true);
+    gecoOPCUAServer(const char *serverName, const char *serverCmd, int portID, gecoApp *App, bool addID = true);
     virtual ~gecoOPCUAServer();
 
     virtual int cmd(int &i, int objc, Tcl_Obj *const objv[]);
-    virtual void handleEvent(gecoEvent* ev);
+    virtual void handleEvent(gecoEvent *ev);
     virtual Tcl_DString *info(const char *frontStr = "");
 
     virtual void terminate(gecoEvent *ev);
@@ -91,8 +125,13 @@ public:
     void removeLinkedVariable(LinkedVariable *var);
     LinkedVariable *findLinkedVariable(const char *TclVar);
     void listLinkedVar();
-
     void addVariableNode(LinkedVariable *var);
+
+    int addSrvCmd(OPCUACmd *cmd);
+    void removeSrvCmd(OPCUACmd *cmd);
+    OPCUACmd *findServerCmd(const char *cmd);
+    void listSrvCmds();
+    void addMethodNode(OPCUACmd *cmd);
 };
 
 #endif /* gecoOPCUAServer_SEEN_ */

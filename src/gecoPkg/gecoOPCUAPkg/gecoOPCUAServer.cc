@@ -159,6 +159,89 @@ LinkedVariable::~LinkedVariable()
   delete displayName;
 }
 
+// -----------------------------------------------------------------------
+//
+// Class to store linked OPC UA server commands
+//
+
+/**
+ * @brief Constructor
+ * @param Srv_Cmd command to which the OPC UA server has to react
+ * @param geco_app Geco App in which the command will have to run
+ */
+
+OPCUACmd::OPCUACmd(const char *Srv_Cmd, gecoApp *geco_app)
+{
+  cmd = new Tcl_DString;
+  Tcl_DStringInit(cmd);
+  Tcl_DStringAppend(cmd, Srv_Cmd, -1);
+
+  app = geco_app;
+
+  next = NULL;
+}
+
+/**
+ * @brief Destructor
+ */
+
+OPCUACmd::~OPCUACmd()
+{
+  Tcl_DStringFree(cmd);
+  delete cmd;
+}
+
+// -------------------------------------------------------------------------
+
+// ------------------------------------------------------------
+//
+// Tcl Script Call Back Method
+//
+
+static UA_StatusCode
+tcl_script_MethodCallback(UA_Server *server,
+                          const UA_NodeId *sessionId, void *sessionHandle,
+                          const UA_NodeId *methodId, void *methodContext,
+                          const UA_NodeId *objectId, void *objectContext,
+                          size_t inputSize, const UA_Variant *input,
+                          size_t outputSize, UA_Variant *output)
+{
+
+  // Validate the number of inputs
+  if (inputSize != 1 || !UA_Variant_hasScalarType(&input[0], &UA_TYPES[UA_TYPES_STRING]))
+  {
+    return UA_STATUSCODE_BADINVALIDARGUMENT;
+  }
+
+  // Retrieve the command and application context
+  auto *cmd = static_cast<OPCUACmd *>(methodContext);
+  gecoApp *app = cmd->getGecoApp();
+  const char *baseCmd = cmd->getCmd();
+
+  // Convert UA_String to C string
+  UA_String *inputStr = static_cast<UA_String *>(input[0].data);
+  std::string inputCStr(reinterpret_cast<char *>(inputStr->data), inputStr->length);
+
+  // Combine the command and input
+  std::string tclCmd = std::string(baseCmd) + " " + inputCStr;
+
+  // Run Tcl script in the gecoApp interpreter
+  Tcl_ResetResult(app->getInterp());
+  Tcl_Eval(app->getInterp(), tclCmd.c_str());
+
+  // Set the output as the Tcl script result
+  const char *tclResult = Tcl_GetStringResult(app->getInterp());
+  UA_String returnValue = UA_STRING(const_cast<char *>(tclResult));
+  UA_Variant_setScalarCopy(output, &returnValue, &UA_TYPES[UA_TYPES_STRING]);
+
+  // Reset Tcl result
+  Tcl_ResetResult(app->getInterp());
+
+  return UA_STATUSCODE_GOOD;
+}
+
+// -------------------------------------------------------------------------
+
 // ---------------------------------------------------------------
 //
 // class gecoOPCUAServer
@@ -171,6 +254,7 @@ gecoOPCUAServer::gecoOPCUAServer(const char *serverName, const char *serverCmd, 
                                                                                                                         gecoProcess(serverName, "user", serverCmd, App)
 {
   firstLinkedVariable = NULL;
+  firstOPCUACmd = NULL;
   port = portID;
   opcua_namespace = new Tcl_DString;
   Tcl_DStringInit(opcua_namespace);
@@ -183,6 +267,9 @@ gecoOPCUAServer::gecoOPCUAServer(const char *serverName, const char *serverCmd, 
   addOption("-linkTclVariable", "links a Tcl variable");
   addOption("-unlinkTclVariable", "removes link to a Tcl variable");
   addOption("-listLinkedTclVariables", "list all linked Tcl variables");
+  addOption("-addServerCommand", "defines a new server command");
+  addOption("-removeServerCommand", "removes a defined server command");
+  addOption("-listServerCommands", "list defined server commands");
   addOption("-namespace", opcua_namespace, "returns/sets OPC UA namespace");
   addOption("-browseName", browseName, "returns/sets OPC UA BrowsName");
   addOption("-displayName", displayName, "returns/sets OPC UA DisplayName");
@@ -219,6 +306,14 @@ gecoOPCUAServer::~gecoOPCUAServer()
     p = p->getNext();
     delete q;
     q = p;
+  }
+
+  OPCUACmd *srv_cmd = firstOPCUACmd;
+  while (firstOPCUACmd)
+  {
+    srv_cmd = firstOPCUACmd;
+    firstOPCUACmd = firstOPCUACmd->next;
+    delete srv_cmd;
   }
 }
 
@@ -266,6 +361,55 @@ int gecoOPCUAServer::cmd(int &i, int objc, Tcl_Obj *const objv[])
   if (index == getOptionIndex("-listLinkedTclVariables"))
   {
     listLinkedVar();
+    i++;
+  }
+
+  if (index == getOptionIndex("-addServerCommand"))
+  {
+    if (i + 1 >= objc)
+    {
+      Tcl_WrongNumArgs(interp, i + 1, objv, "Server_Command");
+      return -1;
+    }
+
+    if (findServerCmd(Tcl_GetString(objv[i + 1])))
+    {
+      Tcl_AppendResult(interp, "command \"", Tcl_GetString(objv[i + 1]),
+                       "\" already defined. No new command was added.", NULL);
+      return -1;
+    }
+
+    // creates a new entry and links it
+    OPCUACmd *cmd = new OPCUACmd(Tcl_GetString(objv[i + 1]), app);
+    if (addSrvCmd(cmd) == TCL_ERROR)
+    {
+      delete cmd;
+      return -1;
+    }
+    i = i + 2;
+  }
+
+  if (index == getOptionIndex("-removeServerCommand"))
+  {
+    if (i + 1 >= objc)
+    {
+      Tcl_WrongNumArgs(interp, i + 1, objv, "Server_Command");
+      return -1;
+    }
+    OPCUACmd *p = findServerCmd(Tcl_GetString(objv[i + 1]));
+    if (p == NULL)
+    {
+      Tcl_AppendResult(interp, "command \"", Tcl_GetString(objv[i + 1]),
+                       "\" is not defined. No command was removed.", NULL);
+      return -1;
+    }
+    removeSrvCmd(p);
+    i = i + 2;
+  }
+
+  if (index == getOptionIndex("-listServerCommands"))
+  {
+    listSrvCmds();
     i++;
   }
 
@@ -366,6 +510,14 @@ void gecoOPCUAServer::activate(gecoEvent *ev)
     var = var->getNext();
   }
 
+  // Add method nodes
+  OPCUACmd *cmd = firstOPCUACmd;
+  while (cmd)
+  {
+    addMethodNode(cmd);
+    cmd = cmd->getNext();
+  }
+
   // Create and start the server thread
   running = true;
   pthread_create(&thread, NULL, server_thread, server);
@@ -454,9 +606,13 @@ void gecoOPCUAServer::listLinkedVar()
   }
 }
 
+/**
+ * @brief Adds an OPC UA variable node to the server
+ */
+
 void gecoOPCUAServer::addVariableNode(LinkedVariable *var)
 {
-  cout << "Adding node: " << Tcl_DStringValue(var->displayName) << "\n";
+  cout << "Adding variable node: " << Tcl_DStringValue(var->displayName) << "\n";
 
   // Add variable under the top node
   UA_Server_addVariableNode(
@@ -475,4 +631,138 @@ void gecoOPCUAServer::addVariableNode(LinkedVariable *var)
   float val = stof(var->TclVarValue);
   UA_Variant_setScalar(&(var->ua_attr.value), &val, &UA_TYPES[UA_TYPES_FLOAT]);
   UA_Server_writeValue(server, var->varNodeId, var->ua_attr.value);
+}
+
+/**
+ * @brief Adds a OPCUACmd command to the command list
+ */
+
+int gecoOPCUAServer::addSrvCmd(OPCUACmd *cmd)
+{
+  OPCUACmd *p = firstOPCUACmd;
+  if (p)
+  {
+    while (p->getNext())
+      p = p->getNext();
+    p->next = cmd;
+  }
+  else
+    firstOPCUACmd = cmd;
+  cmd->next = NULL;
+  return TCL_OK;
+}
+
+/**
+ * @brief Removes a server command from the command list
+ * @param cmd Tcp server command to remove
+ */
+
+void gecoOPCUAServer::removeSrvCmd(OPCUACmd *cmd)
+{
+  if (cmd == firstOPCUACmd)
+  {
+    firstOPCUACmd = cmd->getNext();
+    delete cmd;
+    return;
+  }
+
+  OPCUACmd *p = firstOPCUACmd;
+  while (p)
+  {
+    if (p->getNext() == cmd)
+      break;
+    p = p->getNext();
+  }
+  p->next = cmd->next;
+  delete cmd;
+}
+
+/**
+ * @brief Finds entry related to the server command
+ * @param cmd Server command to find
+ * \return pointer to the OPCUACmd related to the server command
+ */
+
+OPCUACmd *gecoOPCUAServer::findServerCmd(const char *cmd)
+{
+  OPCUACmd *p = firstOPCUACmd;
+  while (p)
+  {
+    if (strcmp(Tcl_DStringValue(p->cmd), cmd) == 0)
+      break;
+    p = p->getNext();
+  }
+  return p;
+}
+
+/**
+ * @brief List all server commands from the command list
+ */
+
+void gecoOPCUAServer::listSrvCmds()
+{
+  char str[100];
+  Tcl_AppendResult(interp,
+                   "NUM  SERVER COMMAND\n", NULL);
+  OPCUACmd *p = firstOPCUACmd;
+  int i = 1;
+  while (p)
+  {
+    sprintf(str, "%-4d %s\n", i,
+            Tcl_DStringValue(p->cmd));
+    Tcl_AppendResult(interp, str, NULL);
+    i++;
+    p = p->getNext();
+  }
+  Tcl_AppendResult(interp,
+                   "----------------------------\n",
+                   "Run `stop` followed by `start` to load/update commands to the OPC UA server", NULL);
+}
+
+/**
+ * @brief Adds a method node to the OPC UA server
+ */
+
+void gecoOPCUAServer::addMethodNode(OPCUACmd *cmd)
+{
+  cout << "Adding method node: " << Tcl_DStringValue(cmd->cmd) << "\n";
+
+  // Input argument
+  UA_Argument inputArgument;
+  UA_Argument_init(&inputArgument);
+  inputArgument.description = UA_LOCALIZEDTEXT(const_cast<char *>("en-US"),
+                                               const_cast<char *>("Input arguments of Tcl Script"));
+  inputArgument.name = UA_STRING(const_cast<char *>("Input"));
+  inputArgument.dataType = UA_TYPES[UA_TYPES_STRING].typeId;
+  inputArgument.valueRank = UA_VALUERANK_SCALAR;
+
+  // Output argument
+  UA_Argument outputArgument;
+  UA_Argument_init(&outputArgument);
+  outputArgument.description = UA_LOCALIZEDTEXT(const_cast<char *>("en-US"),
+                                                const_cast<char *>("Return Value from Tcl Script"));
+  outputArgument.name = UA_STRING(const_cast<char *>("ReturnValue"));
+  outputArgument.dataType = UA_TYPES[UA_TYPES_STRING].typeId;
+  outputArgument.valueRank = UA_VALUERANK_SCALAR;
+
+  // Method attributes
+  UA_MethodAttributes methodAttr = UA_MethodAttributes_default;
+  methodAttr.description = UA_LOCALIZEDTEXT(const_cast<char *>("en-US"), const_cast<char *>("TclScript"));
+  methodAttr.displayName = UA_LOCALIZEDTEXT(const_cast<char *>("en-US"), Tcl_DStringValue(cmd->cmd));
+  methodAttr.executable = true;
+  methodAttr.userExecutable = true;
+
+  // Add the method node under the top node
+  UA_Server_addMethodNode(
+      server,
+      UA_NODEID_NULL,                              // Let the server assign a NodeId
+      topNodeId,                                   // Parent Node: Top node
+      UA_NODEID_NUMERIC(0, UA_NS0ID_HASCOMPONENT), // Reference type
+      UA_QUALIFIEDNAME(ns_idx, cmd->getCmd()),     // Qualified name
+      methodAttr,                                  // Method attributes
+      &tcl_script_MethodCallback,                  // Callback function
+      1, &inputArgument,                           // One input argument
+      1, &outputArgument,                          // One output argument
+      cmd,                                         // Node context
+      NULL);
 }
