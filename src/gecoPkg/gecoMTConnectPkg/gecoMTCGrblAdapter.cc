@@ -189,7 +189,7 @@ int gecoMTCGrblAdapter::cmd(int &i,int objc,Tcl_Obj *const objv[])
       sendGcode("$H");
       sendData("|mode|MANUAL_DATA_INPUT|block|$H");
       sendData("|msg|homing cycle|homing cycle started");
-      sendData("|grbl|FAULT|Disconnected|-1|HIGH|grbl controller disconnected");
+      sendData("|grbl|FAULT|Connection|-1|HIGH|grbl controller disconnected");
       sendData("|avail|UNAVAILABLE");
       
       // waits until homing-cycle is completed
@@ -205,7 +205,7 @@ int gecoMTCGrblAdapter::cmd(int &i,int objc,Tcl_Obj *const objv[])
       delete status;
       sendData("|msg|homing cycle|homing cycle completed");
       sendData("|avail|AVAILABLE");
-      sendData("|grbl|NORMAL|Connected|||grbl controller connected");
+      sendData("|grbl|NORMAL|Connection|||grbl controller connected");
 	
       i++;
     }
@@ -350,7 +350,7 @@ Tcl_DString* gecoMTCGrblAdapter::SHDR(bool forceSend)
 	if (grblConnected == true)
 	  {
 	    // grbl controller got disconnected
-	    sendData("|grbl|FAULT|Disconnected|-1|HIGH|grbl controller disconnected");
+	    sendData("|grbl|FAULT|Connection|-1|HIGH|grbl controller disconnected");
 	    sendData("|avail|UNAVAILABLE");
 	  }
 	grblConnected = false;
@@ -364,7 +364,7 @@ Tcl_DString* gecoMTCGrblAdapter::SHDR(bool forceSend)
 	{
 	  // grbl controller got connected or reconnected
 	  sendData("|avail|AVAILABLE");
-	  sendData("|grbl|NORMAL|Connected|||grbl controller connected");
+	  sendData("|grbl|NORMAL|Connection|||grbl controller connected");
 	  forceSend=true;
 	}
       grblConnected = true;
@@ -388,7 +388,7 @@ void gecoMTCGrblAdapter::addAgent(Tcl_Channel chan, const char* hostName)
   gecoMTCAdapter::addAgent(chan, hostName);
 
   if ((grblConnected) && (status==Active)) {
-    sendData("|grbl|NORMAL|Connected|||grbl controller connected");
+    sendData("|grbl|NORMAL|Connection|||grbl controller connected");
   }
 }
 
@@ -412,7 +412,7 @@ void gecoMTCGrblAdapter::terminate(gecoEvent* ev)
     }
 
   // sends message to agent
-  sendData("|grbl|FAULT|Disconnected|-1|HIGH|grbl controller disconnected");
+  sendData("|grbl|FAULT|Connection|-1|HIGH|grbl controller disconnected");
 }
 
 
@@ -428,10 +428,10 @@ void gecoMTCGrblAdapter::activate(gecoEvent* ev)
   gecoMTCAdapter::activate(ev);
   if (grblChan) {
     sendData("|avail|AVAILABLE");
-    sendData("|grbl|NORMAL|Connected|||grbl controller connected");
+    sendData("|grbl|NORMAL|Connection|||grbl controller connected");
   }
   else {
-    sendData("|grbl|FAULT|Disconnected|-1|HIGH|grbl controller disconnected");
+    sendData("|grbl|FAULT|Connection|-1|HIGH|grbl controller disconnected");
     sendData("|avail|UNAVAILABLE");
   }
 }
@@ -572,21 +572,21 @@ void gecoMTCGrblAdapter::parseGrblStatus(const char* grblStatus)
     {
       lastGrblStatus = GRBL_IDLE;
       sendData("|execution|READY|");
-      sendData("|motion|NORMAL|IDLE|||Idle");
+      sendData("|motion|WARNING|State|||Idle");
     }
   
   if ((strcmp(Tcl_GetVar(interp, "status", 0), "Run")==0) && (lastGrblStatus!=GRBL_RUN))
     {
       lastGrblStatus = GRBL_RUN;
       sendData("|execution|ACTIVE|");
-      sendData("|motion|NORMAL|RUN|||Run");
+      sendData("|motion|NORMAL|State|||Run");
     }
 
   if ((strcmp(Tcl_GetVar(interp, "status", 0), "Alarm")==0) && (lastGrblStatus!=GRBL_ALARM))
     {
       lastGrblStatus = GRBL_ALARM;
       sendData("|execution|READY|");
-      sendData("|motion|WARNING|ALARM|||Alarm");
+      sendData("|motion|FAULT|State|||Alarm");
     }
   
   Tcl_DStringFree(Tcl_Cmd);
