@@ -200,13 +200,15 @@ tcl_script_MethodCallback(UA_Server *server,
   // Retrieve the command and application context
   auto *cmd = static_cast<OPCUACmd *>(methodContext);
   gecoApp *app = cmd->getGecoApp();
-  // const char *baseCmd = cmd->getCmd();
+
+  UA_String *inputStr = static_cast<UA_String *>(input[0].data);
+  std::string inputCStr(reinterpret_cast<char *>(inputStr->data), inputStr->length);
 
   Tcl_DString *tcl_cmd = new Tcl_DString;
   Tcl_DStringInit(tcl_cmd);
   Tcl_DStringAppend(tcl_cmd, cmd->getCmd(), -1);
   Tcl_DStringAppend(tcl_cmd, " ", -1);
-  Tcl_DStringAppend(tcl_cmd, static_cast<const char *>(input[0].data), input[0].arrayLength);
+  Tcl_DStringAppend(tcl_cmd, inputCStr.c_str(), -1);
 
   // Run Tcl script in the gecoApp interpreter
   Tcl_ResetResult(app->getInterp());
