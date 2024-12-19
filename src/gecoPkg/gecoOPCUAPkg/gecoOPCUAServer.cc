@@ -216,18 +216,17 @@ tcl_script_MethodCallback(UA_Server *server,
   // Retrieve the command and application context
   auto *cmd = static_cast<OPCUACmd *>(methodContext);
   gecoApp *app = cmd->getGecoApp();
-  const char *baseCmd = cmd->getCmd();
+  // const char *baseCmd = cmd->getCmd();
 
-  // Convert UA_String to C string
-  UA_String *inputStr = static_cast<UA_String *>(input[0].data);
-  std::string inputCStr(reinterpret_cast<char *>(inputStr->data), inputStr->length);
-
-  // Combine the command and input
-  std::string tclCmd = std::string(baseCmd) + " " + inputCStr;
+  Tcl_DString *tcl_cmd = new Tcl_DString;
+  Tcl_DStringInit(tcl_cmd);
+  Tcl_DStringAppend(tcl_cmd, cmd->getCmd(), -1);
+  Tcl_DStringAppend(tcl_cmd, " ", -1);
+  Tcl_DStringAppend(tcl_cmd, static_cast<const char *>(input[0].data), input[0].arrayLength);
 
   // Run Tcl script in the gecoApp interpreter
   Tcl_ResetResult(app->getInterp());
-  Tcl_Eval(app->getInterp(), tclCmd.c_str());
+  Tcl_Eval(app->getInterp(), Tcl_DStringValue(tcl_cmd));
 
   // Set the output as the Tcl script result
   const char *tclResult = Tcl_GetStringResult(app->getInterp());
@@ -236,6 +235,10 @@ tcl_script_MethodCallback(UA_Server *server,
 
   // Reset Tcl result
   Tcl_ResetResult(app->getInterp());
+
+  // Clean up
+  Tcl_DStringFree(tcl_cmd);
+  delete tcl_cmd;
 
   return UA_STATUSCODE_GOOD;
 }
