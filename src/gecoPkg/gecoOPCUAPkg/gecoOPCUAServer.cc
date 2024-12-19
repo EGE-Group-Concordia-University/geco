@@ -32,22 +32,6 @@ using namespace std;
 
 // Global variables
 UA_Boolean running = false;          // flag to control the server's running state
-volatile sig_atomic_t stop_flag = 0; // flag to control main loop
-
-void *server_thread(void *arg)
-{
-  UA_Server *server = (UA_Server *)arg;
-  // The server will block as long as running = true
-  UA_Server_run(server, &running);
-  return NULL;
-}
-
-void stopHandler(int signum)
-{
-  printf("\nReceived signal '%s' (signal number: %d)\n", strsignal(signum), signum);
-  stop_flag = 1;
-  running = false; // This will stop the server loop in UA_Server_run
-}
 
 // ------------------------------------------------------------
 //
@@ -258,6 +242,7 @@ gecoOPCUAServer::gecoOPCUAServer(const char *serverName, const char *serverCmd, 
 {
   firstLinkedVariable = NULL;
   firstOPCUACmd = NULL;
+  server = NULL;
   port = portID;
   opcua_namespace = new Tcl_DString;
   Tcl_DStringInit(opcua_namespace);
@@ -276,10 +261,6 @@ gecoOPCUAServer::gecoOPCUAServer(const char *serverName, const char *serverCmd, 
   addOption("-namespace", opcua_namespace, "returns/sets OPC UA namespace");
   addOption("-browseName", browseName, "returns/sets OPC UA BrowsName");
   addOption("-displayName", displayName, "returns/sets OPC UA DisplayName");
-
-  // Register signal handler for SIGINT (Ctrl-C) and SIGTERM
-  signal(SIGINT, stopHandler);
-  signal(SIGTERM, stopHandler);
 }
 
 // ---- DESTRUCTOR
@@ -291,8 +272,9 @@ gecoOPCUAServer::~gecoOPCUAServer()
   if (running)
   {
     running = false;
-    pthread_join(thread, NULL);
+    UA_Server_run_shutdown(server);
     UA_Server_delete(server);
+    server = NULL;
   }
 
   Tcl_DStringFree(opcua_namespace);
@@ -430,6 +412,9 @@ void gecoOPCUAServer::handleEvent(gecoEvent *ev)
   if (status != Active)
     return;
 
+  // Run a single iteration of the server
+  UA_Server_run_iterate(server, false);
+
   // update all linked Tcl variables on the server
   LinkedVariable *var = getFirstLinkedVariable();
   while (var)
@@ -456,17 +441,13 @@ Tcl_DString *gecoOPCUAServer::info(const char *frontStr)
 
 void gecoOPCUAServer::terminate(gecoEvent *ev)
 {
-  // Graceful shutdown
   printf("Stopping OPC UA server ...\n");
 
-  // Initiate the shutdown process of the server
-  running = false;
-
-  // Stop the server thread
-  pthread_join(thread, NULL);
-
   // Clean up server resources
+  UA_Server_run_shutdown(server);
   UA_Server_delete(server);
+  server = NULL;
+  running = false;
 
   gecoProcess::terminate(ev);
 }
@@ -521,9 +502,9 @@ void gecoOPCUAServer::activate(gecoEvent *ev)
     cmd = cmd->getNext();
   }
 
-  // Create and start the server thread
+  // Start the server
   running = true;
-  pthread_create(&thread, NULL, server_thread, server);
+  UA_Server_run_startup(server);
 }
 
 /**
