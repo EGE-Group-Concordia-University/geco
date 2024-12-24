@@ -483,7 +483,7 @@ int gecoMTCGrblAdapter::handleGrblResponse()
   if (strstr(Tcl_GetStringResult(getTclInterp()), "error"))
     {
       Tcl_DStringFree(lastErrorCode);
-      Tcl_DStringAppend(lastErrorCode, "|motion|FAULT|", -1);
+      Tcl_DStringAppend(lastErrorCode, "|motion|FAULT||||error:", -1);
       string err = Tcl_GetStringResult(getTclInterp());
       char err_code[3];
       err_code[0] = err[6];
@@ -496,8 +496,6 @@ int gecoMTCGrblAdapter::handleGrblResponse()
 	{
 	  err_code[1] = '\0';
 	}
-      Tcl_DStringAppend(lastErrorCode, err_code , -1);
-      Tcl_DStringAppend(lastErrorCode, "|ERROR||error:", -1);
       Tcl_DStringAppend(lastErrorCode, err_code, -1);
       sendData(Tcl_DStringValue(lastErrorCode));
       ret = stoi(err_code);
@@ -507,7 +505,7 @@ int gecoMTCGrblAdapter::handleGrblResponse()
   if (strstr(Tcl_GetStringResult(getTclInterp()), "ALARM"))
     {
       Tcl_DStringFree(lastErrorCode);
-      Tcl_DStringAppend(lastErrorCode, "|motion|FAULT|", -1);
+      Tcl_DStringAppend(lastErrorCode, "|motion|FAULT||||", -1);
       string err = Tcl_GetStringResult(getTclInterp());
       char err_code[3];
       err_code[0] = err[6];
@@ -520,8 +518,6 @@ int gecoMTCGrblAdapter::handleGrblResponse()
 	{
 	  err_code[1] = '\0';
 	}
-      Tcl_DStringAppend(lastErrorCode, err_code , -1);
-      Tcl_DStringAppend(lastErrorCode, "|ALARM||ALARM:", -1);
       Tcl_DStringAppend(lastErrorCode, err_code, -1);
       sendData(Tcl_DStringValue(lastErrorCode));
       ret = stoi(err_code);
@@ -572,21 +568,21 @@ void gecoMTCGrblAdapter::parseGrblStatus(const char* grblStatus)
     {
       lastGrblStatus = GRBL_IDLE;
       sendData("|execution|READY|");
-      sendData("|motion|WARNING|State|||Idle");
+      sendData("|motion|WARNING||||Idle");
     }
   
   if ((strcmp(Tcl_GetVar(interp, "status", 0), "Run")==0) && (lastGrblStatus!=GRBL_RUN))
     {
       lastGrblStatus = GRBL_RUN;
       sendData("|execution|ACTIVE|");
-      sendData("|motion|NORMAL|State|||Run");
+      sendData("|motion|NORMAL||||Run");
     }
 
   if ((strcmp(Tcl_GetVar(interp, "status", 0), "Alarm")==0) && (lastGrblStatus!=GRBL_ALARM))
     {
       lastGrblStatus = GRBL_ALARM;
       sendData("|execution|READY|");
-      sendData("|motion|FAULT|State|||Alarm");
+      sendData("|motion|FAULT||||Alarm");
     }
   
   Tcl_DStringFree(Tcl_Cmd);
