@@ -206,6 +206,33 @@ int gecoMTCGrblAdapter::cmd(int &i, int objc, Tcl_Obj *const objv[])
     i++;
   }
 
+  if (index == getOptionIndex("-gcodefile"))
+  {
+
+    if (objc > 3)
+    {
+      Tcl_WrongNumArgs(interp, i + 1, objv, "g-code file");
+      return -1;
+    }
+
+    if (objc == 2)
+    {
+      Tcl_AppendResult(interp, Tcl_DStringValue(gcodeFileName), NULL);
+      i++;
+    }
+
+    if (objc == 3)
+    {
+      Tcl_DStringInit(gcodeFileName);
+      Tcl_DStringAppend(gcodeFileName, Tcl_GetString(objv[2]), -1);
+      sendData("|line|UNAVAILABLE");
+      sendData("|prog|", false);
+      sendData(Tcl_GetString(objv[2]));
+
+      i = i + 2;
+    }
+  }
+
   if (index == getOptionIndex("-cycle-start"))
   {
     startCycle();

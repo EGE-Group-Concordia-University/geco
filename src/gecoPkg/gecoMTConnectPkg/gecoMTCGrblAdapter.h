@@ -152,7 +152,7 @@ public:
     addOption("-grblBufferSize", &grblBfsize, "returns/sets grbl buffer size");
     addOption("-homing-cycle", "runs a homing cycle");
     addOption("-sendgcode", "sends g-code to the grbl controller");
-    addOption("-gcodefile", gcodeFileName, "returns/sets g-code program file name to read from");
+    addOption("-gcodefile", "returns/sets g-code program file name to read from");
     addOption("-cycle-start", "starts execution of gcode program");
     addOption("-lastError", "returns last error message from grbl controller");
   }
