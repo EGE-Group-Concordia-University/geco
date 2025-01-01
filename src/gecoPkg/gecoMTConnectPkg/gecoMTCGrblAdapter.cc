@@ -22,6 +22,7 @@
 
 #include <tcl.h>
 #include <cstring>
+#include <regex>
 #include "gecoHelp.h"
 #include "gecoApp.h"
 #include "gecoMTCGrblAdapter.h"
@@ -573,6 +574,12 @@ void gecoMTCGrblAdapter::parseGrblStatus(const char *grblStatus)
   Tcl_DStringAppend(Tcl_Cmd, "set X [lindex [::split $coords ,] 0];", -1);
   Tcl_DStringAppend(Tcl_Cmd, "set Y [lindex [::split $coords ,] 1];", -1);
   Tcl_DStringAppend(Tcl_Cmd, "set Z [lindex [::split $coords ,] 2];", -1);
+  string command = "set Xrel [expr $X-" + std::to_string(x_offset) + "];";
+  Tcl_DStringAppend(Tcl_Cmd, command.c_str(), -1);
+  command = "set Yrel [expr $Y-" + to_string(y_offset) + "];";
+  Tcl_DStringAppend(Tcl_Cmd, command.c_str(), -1);
+  command = "set Zrel [expr $Z-" + to_string(z_offset) + "];";
+  Tcl_DStringAppend(Tcl_Cmd, command.c_str(), -1);
   // gets buffer state
   Tcl_DStringAppend(Tcl_Cmd, "set buff_state [lindex [::split [lindex $fields 2] :] 1];", -1);
   Tcl_DStringAppend(Tcl_Cmd, "set Bf [lindex [::split $buff_state ,] 0];", -1);
@@ -678,6 +685,54 @@ void gecoMTCGrblAdapter::startCycle()
 }
 
 /**
+ * @brief Parse g-code for G92 offsets
+ * @param gcode g-code to parse
+ */
+
+void gecoMTCGrblAdapter::parseG92Command(const char *gcode)
+{
+  if (gcode == "G92.1")
+  {
+    x_offset = 0.0;
+    y_offset = 0.0;
+    z_offset = 0.0;
+    return;
+  }
+  if (gcode == nullptr || string(gcode).find("G92") != 0)
+  {
+    return;
+  }
+
+  // Initialize offsets to 0
+  x_offset = 0.0;
+  y_offset = 0.0;
+  z_offset = 0.0;
+
+  // Convert gcode to std::string for easier processing
+  std::string gcodeStr(gcode);
+
+  // Regex to match G92 followed by optional X, Y, Z with values
+  regex g92Regex(R"(G92(?:\s+X([+-]?\d*\.?\d*))?(?:\s+Y([+-]?\d*\.?\d*))?(?:\s+Z([+-]?\d*\.?\d*))?)");
+  smatch matches;
+
+  if (std::regex_search(gcodeStr, matches, g92Regex))
+  {
+    if (matches[1].matched)
+    {
+      x_offset = atof(Tcl_GetVar(interp, "X", TCL_GLOBAL_ONLY)) - atof(matches[1].str().c_str());
+    }
+    if (matches[2].matched)
+    {
+      y_offset = atof(Tcl_GetVar(interp, "Y", TCL_GLOBAL_ONLY)) - atof(matches[2].str().c_str());
+    }
+    if (matches[3].matched)
+    {
+      z_offset = atof(Tcl_GetVar(interp, "Z", TCL_GLOBAL_ONLY)) - atof(matches[3].str().c_str());
+    }
+  }
+}
+
+/**
  * @brief Sends g-code to the grbl controller
  * @param gcode g-code to send to the grbl controller
  * \return grbl error code or 0 if no error
@@ -686,6 +741,7 @@ void gecoMTCGrblAdapter::startCycle()
 int gecoMTCGrblAdapter::sendGcode(const char *gcode)
 {
   // send g-code to grbl controller
+  parseG92Command(gcode);
   Tcl_WriteChars(grblChan, gcode, -1);
   Tcl_WriteChars(grblChan, "\n", -1);
   Tcl_Flush(grblChan);

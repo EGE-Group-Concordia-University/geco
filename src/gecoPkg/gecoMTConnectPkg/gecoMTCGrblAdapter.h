@@ -117,6 +117,9 @@ protected:
   Tcl_DString*  lastErrorCode;    /*!< Last error message of grbl */
   int           lastGrblStatus;   /*!< Last grbl status */
   int           n_fail;           /*!< Number of consecutive lost connections to Grbl */
+  double        x_offset;         /*!< X-offset to apply to compute relative coordiante */
+  double        y_offset;         /*!< Y-offset to apply to compute relative coordiante */
+  double        z_offset;         /*!< Z-offset to apply to compute relative coordiante */
 
 
 public:
@@ -137,6 +140,9 @@ public:
     lineNbr = 0;
     n_fail = 0;
     grblBfsize = 15;
+    x_offset = 0.0;
+    y_offset = 0.0;
+    z_offset = 0.0;
     lastGrblStatus = GRBL_UNDEFINED;
 
     // links default variables
@@ -144,6 +150,9 @@ public:
     addInsn(new SHDRInsn("X", "Xact", App->getInterp()));
     addInsn(new SHDRInsn("Y", "Yact", App->getInterp()));
     addInsn(new SHDRInsn("Z", "Zact", App->getInterp()));
+    addInsn(new SHDRInsn("Xrel", "Xrel", App->getInterp()));
+    addInsn(new SHDRInsn("Yrel", "Yrel", App->getInterp()));
+    addInsn(new SHDRInsn("Zrel", "Zrel", App->getInterp()));
     addInsn(new SHDRInsn("S", "Sspeed", App->getInterp()));
     addInsn(new SHDRInsn("F", "Frt", App->getInterp()));
     Tcl_LinkVar(interp, "Bf", (char *)&grblBf, TCL_LINK_INT);
@@ -176,6 +185,7 @@ public:
   int  handleGrblResponse();
   void parseGrblStatus(const char* grblStatus);
   void startCycle();
+  void parseG92Command(const char *gcode);
   int  sendGcode(const char* gcode);
   
   Tcl_Channel getTclChannel()  {return grblChan;}
