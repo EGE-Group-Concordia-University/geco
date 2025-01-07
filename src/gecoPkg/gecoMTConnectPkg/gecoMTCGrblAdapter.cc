@@ -124,6 +124,8 @@ gecoMTCGrblAdapter::~gecoMTCGrblAdapter()
 {
   Tcl_DStringFree(gcodeFileName);
   delete gcodeFileName;
+  Tcl_DStringFree(blocksBackLog);
+  delete blocksBackLog;
   Tcl_DStringFree(nextBlock);
   delete nextBlock;
   Tcl_DStringFree(lastErrorCode);
@@ -288,30 +290,46 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent *ev)
 
   if (cycle)
   {
-    if ((grblBf == grblBfsize - 1) || (grblBf == grblBfsize))
+    if (lineNbr == 0)
+    {
+      // store intial buffersize
+      grblBfsize = grblBf;
+
+      // message to agent
+      sendData("|mode|AUTOMATIC|program|", false);
+      sendData(getGCodeFileName());
+
+      // load first two blocks
+      lineNbr = loadNextBlock(0);
+      sendData("|block|", false);
+      sendData(Tcl_DStringValue(nextBlock), false);
+      sendData("|line|", false);
+      sendData(to_string(lineNbr).c_str());
+      if (verbose)
+        cout << "[" << lineNbr << "] " << Tcl_DStringValue(nextBlock) << "\n";
+      lineNbr = loadNextBlock(lineNbr);
+    }
+
+    if ((grblBf == grblBfsize - 1) && (strcmp(Tcl_DStringValue(nextBlock), "gecoMTCGrblAdapter: PROGRAM END") != 0))
     {
       // message to agent
       sendData("|block|", false);
       sendData(Tcl_DStringValue(nextBlock), false);
-      lineNbr++;
       sendData("|line|", false);
       sendData(to_string(lineNbr).c_str());
 
+      if (verbose)
+        cout << "[" << lineNbr << "] " << Tcl_DStringValue(nextBlock) << "\n";
+
       // reads next block into grbl buffer
-      string block;
-      Tcl_DStringFree(nextBlock);
-      if (getline(gcodeFile, block))
-      {
-        Tcl_DStringAppend(nextBlock, block.c_str(), -1);
-        if (sendGcode(block.c_str()) != 0)
-          gcodeFile.close();
-      }
-      else
-      {
-        sendData("|execution|PROGRAM_COMPLETED|");
-        gcodeFile.close();
-        cycle = false;
-      }
+      lineNbr = loadNextBlock(lineNbr);
+    }
+
+    if ((grblBf == grblBfsize) && (strcmp(Tcl_DStringValue(nextBlock), "gecoMTCGrblAdapter: PROGRAM END") == 0))
+    {
+      sendData("|execution|PROGRAM_COMPLETED|");
+      gcodeFile.close();
+      cycle = false;
     }
   }
 }
@@ -624,7 +642,7 @@ void gecoMTCGrblAdapter::parseGrblStatus(const char *grblStatus)
 void gecoMTCGrblAdapter::startCycle()
 {
   cycle = true;
-  lineNbr = 1;
+  lineNbr = 0;
   gcodeFile.open(Tcl_DStringValue(gcodeFileName));
   if (!gcodeFile.is_open())
   {
@@ -632,56 +650,6 @@ void gecoMTCGrblAdapter::startCycle()
     cycle = false;
     return;
   }
-
-  // message to agent
-  Tcl_DString *str = new Tcl_DString;
-  Tcl_DStringInit(str);
-  Tcl_DStringAppend(str, "|mode|AUTOMATIC|program|", -1);
-  Tcl_DStringAppend(str, getGCodeFileName(), -1);
-
-  // sends first block
-  string block;
-  getline(gcodeFile, block);
-  Tcl_DStringAppend(str, "|block|", -1);
-  Tcl_DStringAppend(str, block.c_str(), -1);
-  Tcl_DStringAppend(str, "|line|1", -1);
-  Tcl_WriteChars(grblChan, block.c_str(), -1);
-  Tcl_WriteChars(grblChan, "\n", -1);
-  grblBf = grblBfsize - 1;
-
-  // sends second block
-  Tcl_DStringFree(nextBlock);
-  if (getline(gcodeFile, block))
-  {
-    Tcl_WriteChars(grblChan, block.c_str(), -1);
-    Tcl_WriteChars(grblChan, "\n", -1);
-    Tcl_DStringAppend(nextBlock, block.c_str(), -1);
-    grblBf = grblBfsize - 2;
-  }
-  else
-  {
-    Tcl_DStringAppend(str, "|execution|PROGRAM_COMPLETED\n", -1);
-    gcodeFile.close();
-    cycle = false;
-  }
-
-  Tcl_Flush(grblChan);
-  sendData(Tcl_DStringValue(str));
-  Tcl_DStringFree(str);
-  delete str;
-
-  // creates Tcl command to read answer from controller
-  Tcl_DString *Tcl_Cmd = new Tcl_DString;
-  Tcl_DStringInit(Tcl_Cmd);
-  Tcl_DStringAppend(Tcl_Cmd, "read ", -1);
-  Tcl_DStringAppend(Tcl_Cmd, Tcl_GetChannelName(grblChan), -1);
-
-  // reads answer from socket
-  Tcl_Eval(interp, Tcl_DStringValue(Tcl_Cmd));
-  Tcl_DStringFree(Tcl_Cmd);
-  delete Tcl_Cmd;
-  Tcl_Flush(grblChan);
-  Tcl_ResetResult(interp);
 }
 
 /**
@@ -748,6 +716,72 @@ int gecoMTCGrblAdapter::sendGcode(const char *gcode)
 
   // handles possible errors
   return handleGrblResponse();
+}
+
+/**
+ * @brief Gets current size of grbl buffer
+ * \return grbl buffer size
+ */
+
+void gecoMTCGrblAdapter::updateState()
+{
+  Tcl_DString *status = new Tcl_DString;
+  Tcl_DStringInit(status);
+  Tcl_WriteChars(grblChan, "?", -1);
+  Tcl_Flush(grblChan);
+  Tcl_Gets(grblChan, status);
+  parseGrblStatus(Tcl_DStringValue(status));
+  Tcl_DStringFree(status);
+  delete status;
+}
+
+/**
+ * @brief Loads next block from gcode file into grbl buffer
+ * @param lineNbr line number in the gcode file before loading new block
+ * \return line number in the gcode file to be extecuted after new block is loaded
+ */
+int gecoMTCGrblAdapter::loadNextBlock(int currentlineNbr)
+{
+  Tcl_DStringFree(blocksBackLog);
+  Tcl_DStringInit(blocksBackLog);
+  Tcl_DStringFree(nextBlock);
+  Tcl_DStringInit(nextBlock);
+  updateState();
+  int currentBfSize = grblBf;
+  int currentBf = currentBfSize;
+
+  // loads new blocks into buffer until buffer decreases by one or end of file reached
+  while (grblBf != currentBfSize - 1)
+  {
+    currentlineNbr++;
+    string block;
+    if (strcmp(Tcl_DStringValue(nextBlock), "") != 0)
+    {
+      Tcl_DStringAppend(blocksBackLog, "|block|", -1);
+      Tcl_DStringAppend(blocksBackLog, Tcl_DStringValue(nextBlock), -1);
+    }
+    Tcl_DStringFree(nextBlock);
+    Tcl_DStringInit(nextBlock);
+    if (getline(gcodeFile, block))
+    {
+      Tcl_DStringAppend(nextBlock, block.c_str(), block.length());
+      if (sendGcode(block.c_str()) != 0)
+        gcodeFile.close();
+
+      // update state after loading new command into the grbl buffer (this will update grblBf)
+      // some g-code commands (e.g. G21, G90, comments and few more)
+      // will not decrease the grbl buffer size but gets executed right away by grbl
+      updateState();
+    }
+    else
+    {
+      Tcl_DStringAppend(nextBlock, "gecoMTCGrblAdapter: PROGRAM END", -1);
+      break;
+    }
+  }
+  if (strcmp(Tcl_DStringValue(blocksBackLog), "") != 0)
+    sendData(Tcl_DStringValue(blocksBackLog));
+  return currentlineNbr;
 }
 
 /**

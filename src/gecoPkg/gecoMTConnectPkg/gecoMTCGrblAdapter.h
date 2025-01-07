@@ -111,6 +111,7 @@ protected:
   ifstream      gcodeFile;        /*!< ifstream to g-code file to read */
   long          lineNbr;          /*!< absolute line number wihtin gcode file under execution */
   bool          cycle;            /*!< True if cycle is running */
+  Tcl_DString*  blocksBackLog;    /*!< blocks that where immediatly executed at upload to grbl */
   Tcl_DString*  nextBlock;        /*!< Next gcode block that will be exectuted */
   int           grblBfsize;       /*!< Grbl buffer stize */
   int           grblBf;           /*!< Grbl buffer status */
@@ -130,6 +131,8 @@ public:
   {
     gcodeFileName = new Tcl_DString;
     Tcl_DStringInit(gcodeFileName);
+    blocksBackLog = new Tcl_DString;
+    Tcl_DStringInit(blocksBackLog);
     nextBlock = new Tcl_DString;
     Tcl_DStringInit(nextBlock);
     lastErrorCode = new Tcl_DString;
@@ -187,6 +190,8 @@ public:
   void startCycle();
   void parseG92Command(const char *gcode);
   int  sendGcode(const char* gcode);
+  void  updateState();
+  int  loadNextBlock(int lineNbr);
   
   Tcl_Channel getTclChannel()  {return grblChan;}
   void        setTclChannel(Tcl_Channel chan);
