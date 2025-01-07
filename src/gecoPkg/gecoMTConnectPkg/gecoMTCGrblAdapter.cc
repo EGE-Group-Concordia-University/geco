@@ -288,6 +288,9 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent *ev)
     return;
   }
 
+  // update G92 offsets from grbl controller
+  getG92Offsets();
+
   if (cycle)
   {
     if (lineNbr == 0)
@@ -321,8 +324,30 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent *ev)
       if (verbose)
         cout << "[" << lineNbr << "] " << Tcl_DStringValue(nextBlock) << "\n";
 
-      // reads next block into grbl buffer
-      lineNbr = loadNextBlock(lineNbr);
+      if (strncmp(Tcl_DStringValue(nextBlock), "G4", 2) == 0 || strncmp(Tcl_DStringValue(nextBlock), "G38", 3) == 0)
+      {
+        cout << "Executing a G4: " << grblBf << " : " << grblBfsize << "\n";
+        // hack for particular behaviour of these commands in grbl
+        // reset buffer to correct size
+        // reads exaclty one next command into grbl buffer
+        grblBfsize = grblBfsize - 1;
+
+        // add next block
+        Tcl_DStringFree(nextBlock);
+        Tcl_DStringInit(nextBlock);
+        string block;
+        if (getline(gcodeFile, block))
+        {
+          Tcl_DStringAppend(nextBlock, block.c_str(), block.length());
+          sendGcode(block.c_str());
+        }
+        else
+          Tcl_DStringAppend(nextBlock, "gecoMTCGrblAdapter: PROGRAM END", -1);
+        lineNbr++;
+      }
+      else
+        // reads next block into grbl buffer
+        lineNbr = loadNextBlock(lineNbr);
     }
 
     if ((grblBf == grblBfsize) && (strcmp(Tcl_DStringValue(nextBlock), "gecoMTCGrblAdapter: PROGRAM END") == 0))
@@ -709,7 +734,6 @@ void gecoMTCGrblAdapter::parseG92Command(const char *gcode)
 int gecoMTCGrblAdapter::sendGcode(const char *gcode)
 {
   // send g-code to grbl controller
-  parseG92Command(gcode);
   Tcl_WriteChars(grblChan, gcode, -1);
   Tcl_WriteChars(grblChan, "\n", -1);
   Tcl_Flush(grblChan);
@@ -719,8 +743,43 @@ int gecoMTCGrblAdapter::sendGcode(const char *gcode)
 }
 
 /**
- * @brief Gets current size of grbl buffer
- * \return grbl buffer size
+ * @brief Get current G92 offsets from grbl controller
+ */
+
+void gecoMTCGrblAdapter::getG92Offsets()
+{
+  Tcl_DString *Tcl_Cmd = new Tcl_DString;
+  Tcl_DStringInit(Tcl_Cmd);
+  Tcl_DStringAppend(Tcl_Cmd, "put ", -1);
+  Tcl_DStringAppend(Tcl_Cmd, Tcl_GetChannelName(grblChan), -1);
+  Tcl_DStringAppend(Tcl_Cmd, " $#;", -1);
+  Tcl_DStringAppend(Tcl_Cmd, "read ", -1);
+  Tcl_DStringAppend(Tcl_Cmd, Tcl_GetChannelName(grblChan), -1);
+
+  // reads answer from socket
+  Tcl_ResetResult(interp);
+  Tcl_Eval(interp, Tcl_DStringValue(Tcl_Cmd));
+  Tcl_Flush(grblChan);
+  Tcl_DStringFree(Tcl_Cmd);
+  delete Tcl_Cmd;
+
+  // extract the offsets
+  const char* g92_start = std::strstr(Tcl_GetStringResult(getTclInterp()), "[G92:");
+    if (g92_start) {
+        // Move the pointer past "[G92:"
+        g92_start += 5;
+
+        // Parse the three numbers
+        char* end_ptr;
+        x_offset = std::strtod(g92_start, &end_ptr);   // Extract X offset
+        y_offset = std::strtod(end_ptr + 1, &end_ptr); // Extract Y offset
+        z_offset = std::strtod(end_ptr + 1, nullptr);  // Extract Z offset
+    }
+}
+
+
+/**
+ * @brief Update cnc state
  */
 
 void gecoMTCGrblAdapter::updateState()
@@ -772,6 +831,13 @@ int gecoMTCGrblAdapter::loadNextBlock(int currentlineNbr)
       // some g-code commands (e.g. G21, G90, comments and few more)
       // will not decrease the grbl buffer size but gets executed right away by grbl
       updateState();
+
+      if (strncmp(Tcl_DStringValue(nextBlock), "G4", 2) == 0 || strncmp(Tcl_DStringValue(nextBlock), "G38", 3) == 0)
+      {
+        // this is a hack to accomodate for the particular behaviour of these commands from grbl
+        grblBfsize = grblBfsize+1;
+        break;
+      }
     }
     else
     {

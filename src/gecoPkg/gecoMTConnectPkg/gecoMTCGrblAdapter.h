@@ -190,7 +190,8 @@ public:
   void startCycle();
   void parseG92Command(const char *gcode);
   int  sendGcode(const char* gcode);
-  void  updateState();
+  void getG92Offsets();
+  void updateState();
   int  loadNextBlock(int lineNbr);
   
   Tcl_Channel getTclChannel()  {return grblChan;}
