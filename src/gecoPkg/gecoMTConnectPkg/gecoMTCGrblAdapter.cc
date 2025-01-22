@@ -668,6 +668,7 @@ void gecoMTCGrblAdapter::startCycle()
 {
   cycle = true;
   lineNbr = 0;
+  if (gcodeFile.is_open()) gcodeFile.close();
   gcodeFile.open(Tcl_DStringValue(gcodeFileName));
   if (!gcodeFile.is_open())
   {
@@ -680,6 +681,8 @@ void gecoMTCGrblAdapter::startCycle()
 /**
  * @brief Parse g-code for G92 offsets
  * @param gcode g-code to parse
+ * This command is no longer used by gecoMTCGrblAdapter.
+ * It is here if someone wants to use it in their application
  */
 
 void gecoMTCGrblAdapter::parseG92Command(const char *gcode)
@@ -825,7 +828,10 @@ int gecoMTCGrblAdapter::loadNextBlock(int currentlineNbr)
     {
       Tcl_DStringAppend(nextBlock, block.c_str(), block.length());
       if (sendGcode(block.c_str()) != 0)
+      {
+        cout << "We got an error when sending : '" << block.c_str() << "' to GRBL controller\n";
         gcodeFile.close();
+      }
 
       // update state after loading new command into the grbl buffer (this will update grblBf)
       // some g-code commands (e.g. G21, G90, comments and few more)
