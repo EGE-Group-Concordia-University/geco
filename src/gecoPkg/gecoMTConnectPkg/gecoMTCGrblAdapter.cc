@@ -771,6 +771,8 @@ void gecoMTCGrblAdapter::getG92Offsets()
 {
   Tcl_DString *rep = new Tcl_DString;
   Tcl_DStringInit(rep);
+  // flush channel in case old data still present
+  Tcl_Flush(grblChan);
   Tcl_WriteChars(grblChan, "$#\n", -1);
   Tcl_Flush(grblChan);
 
@@ -795,8 +797,8 @@ void gecoMTCGrblAdapter::getG92Offsets()
     }
     else if (bytesRead == 0)
     {
-      // No data available; wait briefly and retry
-      usleep(1000);
+      // No response (e.g. disconnected)
+      break;
     }
     else
     {
