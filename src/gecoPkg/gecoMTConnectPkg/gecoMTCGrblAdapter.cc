@@ -23,6 +23,7 @@
 #include <tcl.h>
 #include <cstring>
 #include <regex>
+#include <unistd.h>
 #include "gecoHelp.h"
 #include "gecoApp.h"
 #include "gecoMTCGrblAdapter.h"
@@ -288,9 +289,6 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent *ev)
     return;
   }
 
-  // update G92 offsets from grbl controller
-  getG92Offsets();
-
   if (cycle)
   {
     if (lineNbr == 0)
@@ -311,6 +309,7 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent *ev)
       if (verbose)
         cout << "[" << lineNbr << "] " << Tcl_DStringValue(nextBlock) << "\n";
       lineNbr = loadNextBlock(lineNbr);
+      return;
     }
 
     if ((grblBf == grblBfsize - 1) && (strcmp(Tcl_DStringValue(nextBlock), "gecoMTCGrblAdapter: PROGRAM END") != 0))
@@ -344,10 +343,14 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent *ev)
         else
           Tcl_DStringAppend(nextBlock, "gecoMTCGrblAdapter: PROGRAM END", -1);
         lineNbr++;
+        return;
       }
       else
+      {
         // reads next block into grbl buffer
         lineNbr = loadNextBlock(lineNbr);
+        return;
+      }
     }
 
     if ((grblBf == grblBfsize) && (strcmp(Tcl_DStringValue(nextBlock), "gecoMTCGrblAdapter: PROGRAM END") == 0))
@@ -359,14 +362,18 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent *ev)
 
     if ((grblBf == grblBfsize) && (strcmp(Tcl_DStringValue(nextBlock), "gecoMTCGrblAdapter: PROGRAM END") != 0))
     {
-      // Happens for cases where motion is short 
+      // Happens for cases where motion is short
       // and buffer is fully executed during a Tcl loop cycle
       // The motion was stopped for short time
       if (verbose)
         cout << "[" << lineNbr << "] " << Tcl_DStringValue(nextBlock) << " | WARNING : too short motion to be handled properly\n";
       lineNbr = loadNextBlock(lineNbr);
+      return;
     }
   }
+
+  // update G92 offsets from grbl controller
+  getG92Offsets();
 }
 
 /**
@@ -410,7 +417,7 @@ Tcl_DString *gecoMTCGrblAdapter::SHDR(bool forceSend)
     return gecoMTCAdapter::SHDR(forceSend);
 
   // handles possible alarm state
-  handleGrblResponse();
+  // handleGrblResponse();
 
   Tcl_DString *status = new Tcl_DString;
   ;
@@ -678,7 +685,8 @@ void gecoMTCGrblAdapter::startCycle()
 {
   cycle = true;
   lineNbr = 0;
-  if (gcodeFile.is_open()) gcodeFile.close();
+  if (gcodeFile.is_open())
+    gcodeFile.close();
   gcodeFile.open(Tcl_DStringValue(gcodeFileName));
   if (!gcodeFile.is_open())
   {
@@ -761,35 +769,60 @@ int gecoMTCGrblAdapter::sendGcode(const char *gcode)
 
 void gecoMTCGrblAdapter::getG92Offsets()
 {
-  Tcl_DString *Tcl_Cmd = new Tcl_DString;
-  Tcl_DStringInit(Tcl_Cmd);
-  Tcl_DStringAppend(Tcl_Cmd, "put ", -1);
-  Tcl_DStringAppend(Tcl_Cmd, Tcl_GetChannelName(grblChan), -1);
-  Tcl_DStringAppend(Tcl_Cmd, " $#;", -1);
-  Tcl_DStringAppend(Tcl_Cmd, "read ", -1);
-  Tcl_DStringAppend(Tcl_Cmd, Tcl_GetChannelName(grblChan), -1);
-
-  // reads answer from socket
-  Tcl_ResetResult(interp);
-  Tcl_Eval(interp, Tcl_DStringValue(Tcl_Cmd));
+  Tcl_DString *rep = new Tcl_DString;
+  Tcl_DStringInit(rep);
+  Tcl_WriteChars(grblChan, "$#\n", -1);
   Tcl_Flush(grblChan);
-  Tcl_DStringFree(Tcl_Cmd);
-  delete Tcl_Cmd;
 
-  // extract the offsets
-  const char* g92_start = std::strstr(Tcl_GetStringResult(getTclInterp()), "[G92:");
-    if (g92_start) {
-        // Move the pointer past "[G92:"
-        g92_start += 5;
+  char buffer[256];
+  int totalBytes = 0;
 
-        // Parse the three numbers
-        char* end_ptr;
-        x_offset = std::strtod(g92_start, &end_ptr);   // Extract X offset
-        y_offset = std::strtod(end_ptr + 1, &end_ptr); // Extract Y offset
-        z_offset = std::strtod(end_ptr + 1, nullptr);  // Extract Z offset
+  // get response from GRBL
+  while (1)
+  {
+    int bytesRead = Tcl_Read(grblChan, buffer, sizeof(buffer) - 1);
+
+    if (bytesRead > 0)
+    {
+      buffer[bytesRead] = '\0';
+      Tcl_DStringAppend(rep, buffer, bytesRead);
+
+      // Check if response is complete
+      if (strstr(Tcl_DStringValue(rep), "ok\n"))
+      {
+        break;
+      }
     }
-}
+    else if (bytesRead == 0)
+    {
+      // No data available; wait briefly and retry
+      usleep(1000);
+    }
+    else
+    {
+      // An error occurred
+      fprintf(stderr, "Error reading from channel: %s\n", Tcl_PosixError(NULL));
+      Tcl_DStringFree(rep);
+      return;
+    }
+  }
 
+  const char *g92_start = std::strstr(Tcl_DStringValue(rep), "[G92:");
+  if (g92_start)
+  {
+    // Move the pointer past "[G92:"
+    g92_start += 5;
+
+    // Parse the three numbers
+    char *end_ptr;
+    x_offset = std::strtod(g92_start, &end_ptr);   // Extract X offset
+    y_offset = std::strtod(end_ptr + 1, &end_ptr); // Extract Y offset
+    z_offset = std::strtod(end_ptr + 1, nullptr);  // Extract Z offset
+  }
+
+  Tcl_DStringFree(rep);
+  delete rep;
+}
 
 /**
  * @brief Update cnc state
@@ -851,7 +884,7 @@ int gecoMTCGrblAdapter::loadNextBlock(int currentlineNbr)
       if (strncmp(Tcl_DStringValue(nextBlock), "G4", 2) == 0 || strncmp(Tcl_DStringValue(nextBlock), "G38", 3) == 0)
       {
         // this is a hack to accomodate for the particular behaviour of these commands from grbl
-        grblBfsize = grblBfsize+1;
+        grblBfsize = grblBfsize + 1;
         break;
       }
     }
