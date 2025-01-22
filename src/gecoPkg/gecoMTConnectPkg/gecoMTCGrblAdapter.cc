@@ -302,10 +302,10 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent *ev)
 
       // load first two blocks
       lineNbr = loadNextBlock(0);
-      sendData("|block|", false);
-      sendData(Tcl_DStringValue(nextBlock), false);
       sendData("|line|", false);
-      sendData(to_string(lineNbr).c_str());
+      sendData(to_string(lineNbr).c_str(), false);
+      sendData("|block|", false);
+      sendData(Tcl_DStringValue(nextBlock));
       if (verbose)
         cout << "[" << lineNbr << "] " << Tcl_DStringValue(nextBlock) << "\n";
       lineNbr = loadNextBlock(lineNbr);
@@ -315,10 +315,10 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent *ev)
     if ((grblBf == grblBfsize - 1) && (strcmp(Tcl_DStringValue(nextBlock), "gecoMTCGrblAdapter: PROGRAM END") != 0))
     {
       // message to agent
-      sendData("|block|", false);
-      sendData(Tcl_DStringValue(nextBlock), false);
       sendData("|line|", false);
-      sendData(to_string(lineNbr).c_str());
+      sendData(to_string(lineNbr).c_str(), false);
+      sendData("|block|", false);
+      sendData(Tcl_DStringValue(nextBlock));
 
       if (verbose)
         cout << "[" << lineNbr << "] " << Tcl_DStringValue(nextBlock) << "\n";
@@ -864,6 +864,8 @@ int gecoMTCGrblAdapter::loadNextBlock(int currentlineNbr)
     string block;
     if (strcmp(Tcl_DStringValue(nextBlock), "") != 0)
     {
+      Tcl_DStringAppend(blocksBackLog, "|line|", -1);
+      Tcl_DStringAppend(blocksBackLog, to_string(currentlineNbr-1).c_str(), -1);
       Tcl_DStringAppend(blocksBackLog, "|block|", -1);
       Tcl_DStringAppend(blocksBackLog, Tcl_DStringValue(nextBlock), -1);
     }
