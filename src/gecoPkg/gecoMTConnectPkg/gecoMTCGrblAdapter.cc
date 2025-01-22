@@ -356,6 +356,16 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent *ev)
       gcodeFile.close();
       cycle = false;
     }
+
+    if ((grblBf == grblBfsize) && (strcmp(Tcl_DStringValue(nextBlock), "gecoMTCGrblAdapter: PROGRAM END") != 0))
+    {
+      // Happens for cases where motion is short 
+      // and buffer is fully executed during a Tcl loop cycle
+      // The motion was stopped for short time
+      if (verbose)
+        cout << "[" << lineNbr << "] " << Tcl_DStringValue(nextBlock) << " | WARNING : too short motion to be handled properly\n";
+      lineNbr = loadNextBlock(lineNbr);
+    }
   }
 }
 
