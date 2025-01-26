@@ -77,10 +77,11 @@ private:
 
 protected:
     Tcl_DString *cmd;
+    Tcl_DString *description;
     gecoApp *app;
 
 public:
-    OPCUACmd(const char *Srv_Cmd, gecoApp *geco_app);
+    OPCUACmd(const char *Srv_Cmd, const char *cmd_description, gecoApp *geco_app);
     ~OPCUACmd();
 
     OPCUACmd *getNext() { return next; }

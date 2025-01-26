@@ -154,11 +154,15 @@ LinkedVariable::~LinkedVariable()
  * @param geco_app Geco App in which the command will have to run
  */
 
-OPCUACmd::OPCUACmd(const char *Srv_Cmd, gecoApp *geco_app)
+OPCUACmd::OPCUACmd(const char *Srv_Cmd, const char *cmd_description, gecoApp *geco_app)
 {
   cmd = new Tcl_DString;
   Tcl_DStringInit(cmd);
   Tcl_DStringAppend(cmd, Srv_Cmd, -1);
+
+  description = new Tcl_DString;
+  Tcl_DStringInit(description);
+  Tcl_DStringAppend(description, cmd_description, -1);
 
   app = geco_app;
 
@@ -173,6 +177,8 @@ OPCUACmd::~OPCUACmd()
 {
   Tcl_DStringFree(cmd);
   delete cmd;
+  Tcl_DStringFree(description);
+  delete description;
 }
 
 // -------------------------------------------------------------------------
@@ -353,9 +359,9 @@ int gecoOPCUAServer::cmd(int &i, int objc, Tcl_Obj *const objv[])
 
   if (index == getOptionIndex("-addServerCommand"))
   {
-    if (i + 1 >= objc)
+    if (i + 2 >= objc)
     {
-      Tcl_WrongNumArgs(interp, i + 1, objv, "Server_Command");
+      Tcl_WrongNumArgs(interp, i + 1, objv, "Server_Command Command_description");
       return -1;
     }
 
@@ -367,13 +373,13 @@ int gecoOPCUAServer::cmd(int &i, int objc, Tcl_Obj *const objv[])
     }
 
     // creates a new entry and links it
-    OPCUACmd *cmd = new OPCUACmd(Tcl_GetString(objv[i + 1]), app);
+    OPCUACmd *cmd = new OPCUACmd(Tcl_GetString(objv[i + 1]), Tcl_GetString(objv[i + 2]), app);
     if (addSrvCmd(cmd) == TCL_ERROR)
     {
       delete cmd;
       return -1;
     }
-    i = i + 2;
+    i = i + 3;
   }
 
   if (index == getOptionIndex("-removeServerCommand"))
@@ -689,13 +695,15 @@ void gecoOPCUAServer::listSrvCmds()
 {
   char str[100];
   Tcl_AppendResult(interp,
-                   "NUM  SERVER COMMAND\n", NULL);
+                   "NUM  SERVER COMMAND            DESCRIPTION\n", NULL);
   OPCUACmd *p = firstOPCUACmd;
   int i = 1;
   while (p)
   {
-    sprintf(str, "%-4d %s\n", i,
-            Tcl_DStringValue(p->cmd));
+    sprintf(str, "%-4d %-25s %s\n",
+            i,
+            Tcl_DStringValue(p->cmd),
+            Tcl_DStringValue(p->description));
     Tcl_AppendResult(interp, str, NULL);
     i++;
     p = p->getNext();
@@ -733,7 +741,7 @@ void gecoOPCUAServer::addMethodNode(OPCUACmd *cmd)
 
   // Method attributes
   UA_MethodAttributes methodAttr = UA_MethodAttributes_default;
-  methodAttr.description = UA_LOCALIZEDTEXT(const_cast<char *>("en-US"), const_cast<char *>("TclScript"));
+  methodAttr.description = UA_LOCALIZEDTEXT(const_cast<char *>("en-US"), const_cast<char *>(Tcl_DStringValue(cmd->description)));
   methodAttr.displayName = UA_LOCALIZEDTEXT(const_cast<char *>("en-US"), Tcl_DStringValue(cmd->cmd));
   methodAttr.executable = true;
   methodAttr.userExecutable = true;
