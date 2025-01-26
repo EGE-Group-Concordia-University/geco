@@ -302,10 +302,10 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent *ev)
 
       // load first two blocks
       lineNbr = loadNextBlock(0);
-      sendData("|block|", false);
-      sendData(Tcl_DStringValue(nextBlock), false);
       sendData("|line|", false);
-      sendData(to_string(lineNbr).c_str());
+      sendData(to_string(lineNbr).c_str(), false);
+      sendData("|block|", false);
+      sendData(Tcl_DStringValue(nextBlock));
       if (verbose)
         cout << "[" << lineNbr << "] " << Tcl_DStringValue(nextBlock) << "\n";
       lineNbr = loadNextBlock(lineNbr);
@@ -315,10 +315,10 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent *ev)
     if ((grblBf == grblBfsize - 1) && (strcmp(Tcl_DStringValue(nextBlock), "gecoMTCGrblAdapter: PROGRAM END") != 0))
     {
       // message to agent
-      sendData("|block|", false);
-      sendData(Tcl_DStringValue(nextBlock), false);
       sendData("|line|", false);
-      sendData(to_string(lineNbr).c_str());
+      sendData(to_string(lineNbr).c_str(), false);
+      sendData("|block|", false);
+      sendData(Tcl_DStringValue(nextBlock));
 
       if (verbose)
         cout << "[" << lineNbr << "] " << Tcl_DStringValue(nextBlock) << "\n";
@@ -771,6 +771,8 @@ void gecoMTCGrblAdapter::getG92Offsets()
 {
   Tcl_DString *rep = new Tcl_DString;
   Tcl_DStringInit(rep);
+  // flush channel in case old data still present
+  Tcl_Flush(grblChan);
   Tcl_WriteChars(grblChan, "$#\n", -1);
   Tcl_Flush(grblChan);
 
@@ -795,8 +797,8 @@ void gecoMTCGrblAdapter::getG92Offsets()
     }
     else if (bytesRead == 0)
     {
-      // No data available; wait briefly and retry
-      usleep(1000);
+      // No response (e.g. disconnected)
+      break;
     }
     else
     {
@@ -862,6 +864,8 @@ int gecoMTCGrblAdapter::loadNextBlock(int currentlineNbr)
     string block;
     if (strcmp(Tcl_DStringValue(nextBlock), "") != 0)
     {
+      Tcl_DStringAppend(blocksBackLog, "|line|", -1);
+      Tcl_DStringAppend(blocksBackLog, to_string(currentlineNbr-1).c_str(), -1);
       Tcl_DStringAppend(blocksBackLog, "|block|", -1);
       Tcl_DStringAppend(blocksBackLog, Tcl_DStringValue(nextBlock), -1);
     }
