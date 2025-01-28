@@ -131,6 +131,8 @@ gecoMTCGrblAdapter::~gecoMTCGrblAdapter()
   delete nextBlock;
   Tcl_DStringFree(lastErrorCode);
   delete lastErrorCode;
+  Tcl_DStringFree(grblResp);
+  delete grblResp;
 }
 
 /*!
@@ -372,8 +374,14 @@ void gecoMTCGrblAdapter::handleEvent(gecoEvent *ev)
     }
   }
 
-  // update G92 offsets from grbl controller
-  getG92Offsets();
+  // update G92 offsets by reading them from grbl controller
+  // as it is a time consuming operation (around 100ms) it is not done on every Tcl loop cycle
+  if (n_g92 == 5)
+  {
+    getG92Offsets();
+    n_g92 = 0;
+  }
+  n_g92++;
 }
 
 /**
@@ -419,15 +427,12 @@ Tcl_DString *gecoMTCGrblAdapter::SHDR(bool forceSend)
   // handles possible alarm state
   // handleGrblResponse();
 
-  Tcl_DString *status = new Tcl_DString;
-  ;
-  Tcl_DStringInit(status);
-
   Tcl_WriteChars(grblChan, "?", -1);
   Tcl_Flush(grblChan);
-
-  Tcl_Gets(grblChan, status);
-  if (strcmp(Tcl_DStringValue(status), "") == 0)
+  //Tcl_Gets(grblChan, grblResp);
+  read_grbl_response();
+  cout << Tcl_DStringValue(grblResp) << "\n";
+  if (strcmp(Tcl_DStringValue(grblResp), "") == 0)
   {
     if (n_fail == 3)
     {
@@ -453,11 +458,8 @@ Tcl_DString *gecoMTCGrblAdapter::SHDR(bool forceSend)
     }
     grblConnected = true;
     n_fail = 0;
-    parseGrblStatus(Tcl_DStringValue(status));
+    parseGrblStatus(Tcl_DStringValue(grblResp));
   }
-
-  Tcl_DStringFree(status);
-  delete status;
 
   return gecoMTCAdapter::SHDR(forceSend);
 }
@@ -517,6 +519,50 @@ void gecoMTCGrblAdapter::activate(gecoEvent *ev)
   {
     sendData("|grbl|FAULT|Connection|-1|HIGH|grbl controller disconnected");
     sendData("|avail|UNAVAILABLE");
+  }
+}
+
+/**
+ * @brief Gets response sent by grbl. Will update the variable grblResp
+ */
+
+void gecoMTCGrblAdapter::read_grbl_response()
+{
+  Tcl_DStringFree(grblResp);
+  Tcl_DStringInit(grblResp);
+
+  char buffer[256];
+  int totalBytes = 0;
+
+  // get response from GRBL
+  while (1)
+  {
+    int bytesRead = Tcl_Read(grblChan, buffer, sizeof(buffer) - 1);
+
+    if (bytesRead > 0)
+    {
+      buffer[bytesRead] = '\0';
+      Tcl_DStringAppend(grblResp, buffer, bytesRead);
+
+      // Check if response is complete (either 'ok\n' or a '>\n' as a response from '?' request)
+      if ((strstr(Tcl_DStringValue(grblResp), "ok\n")) || (strstr(Tcl_DStringValue(grblResp), ">\n")))
+      {
+        // Remove ending '\n'
+        Tcl_DStringSetLength(grblResp, Tcl_DStringLength(grblResp) - 1);
+        break;
+      }
+    }
+    else if (bytesRead == 0)
+    {
+      // No response (e.g. disconnected)
+      break;
+    }
+    else
+    {
+      // An error occurred
+      fprintf(stderr, "Error reading from channel: %s\n", Tcl_PosixError(NULL));
+      Tcl_DStringFree(grblResp);
+    }
   }
 }
 
@@ -769,47 +815,13 @@ int gecoMTCGrblAdapter::sendGcode(const char *gcode)
 
 void gecoMTCGrblAdapter::getG92Offsets()
 {
-  Tcl_DString *rep = new Tcl_DString;
-  Tcl_DStringInit(rep);
   // flush channel in case old data still present
   Tcl_Flush(grblChan);
   Tcl_WriteChars(grblChan, "$#\n", -1);
   Tcl_Flush(grblChan);
+  read_grbl_response();
 
-  char buffer[256];
-  int totalBytes = 0;
-
-  // get response from GRBL
-  while (1)
-  {
-    int bytesRead = Tcl_Read(grblChan, buffer, sizeof(buffer) - 1);
-
-    if (bytesRead > 0)
-    {
-      buffer[bytesRead] = '\0';
-      Tcl_DStringAppend(rep, buffer, bytesRead);
-
-      // Check if response is complete
-      if (strstr(Tcl_DStringValue(rep), "ok\n"))
-      {
-        break;
-      }
-    }
-    else if (bytesRead == 0)
-    {
-      // No response (e.g. disconnected)
-      break;
-    }
-    else
-    {
-      // An error occurred
-      fprintf(stderr, "Error reading from channel: %s\n", Tcl_PosixError(NULL));
-      Tcl_DStringFree(rep);
-      return;
-    }
-  }
-
-  const char *g92_start = std::strstr(Tcl_DStringValue(rep), "[G92:");
+  const char *g92_start = std::strstr(Tcl_DStringValue(grblResp), "[G92:");
   if (g92_start)
   {
     // Move the pointer past "[G92:"
@@ -821,9 +833,6 @@ void gecoMTCGrblAdapter::getG92Offsets()
     y_offset = std::strtod(end_ptr + 1, &end_ptr); // Extract Y offset
     z_offset = std::strtod(end_ptr + 1, nullptr);  // Extract Z offset
   }
-
-  Tcl_DStringFree(rep);
-  delete rep;
 }
 
 /**
@@ -865,7 +874,7 @@ int gecoMTCGrblAdapter::loadNextBlock(int currentlineNbr)
     if (strcmp(Tcl_DStringValue(nextBlock), "") != 0)
     {
       Tcl_DStringAppend(blocksBackLog, "|line|", -1);
-      Tcl_DStringAppend(blocksBackLog, to_string(currentlineNbr-1).c_str(), -1);
+      Tcl_DStringAppend(blocksBackLog, to_string(currentlineNbr - 1).c_str(), -1);
       Tcl_DStringAppend(blocksBackLog, "|block|", -1);
       Tcl_DStringAppend(blocksBackLog, Tcl_DStringValue(nextBlock), -1);
     }

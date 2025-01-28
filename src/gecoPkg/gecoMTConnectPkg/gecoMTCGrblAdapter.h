@@ -102,6 +102,9 @@ const int
 
 class gecoMTCGrblAdapter : public gecoMTCAdapter
 {
+private:
+
+  int           n_g92;
 
 protected:
 
@@ -113,6 +116,7 @@ protected:
   bool          cycle;            /*!< True if cycle is running */
   Tcl_DString*  blocksBackLog;    /*!< blocks that where immediatly executed at upload to grbl */
   Tcl_DString*  nextBlock;        /*!< Next gcode block that will be exectuted */
+  Tcl_DString*  grblResp;         /*!< Holds response from grbl. Used internally by the class */
   int           grblBfsize;       /*!< Grbl buffer stize */
   int           grblBf;           /*!< Grbl buffer status */
   Tcl_DString*  lastErrorCode;    /*!< Last error message of grbl */
@@ -137,11 +141,14 @@ public:
     Tcl_DStringInit(nextBlock);
     lastErrorCode = new Tcl_DString;
     Tcl_DStringInit(lastErrorCode);
+    grblResp = new Tcl_DString;
+    Tcl_DStringInit(grblResp);
     grblConnected = false;
     grblChan = NULL;
     cycle = false;
     lineNbr = 0;
     n_fail = 0;
+    n_g92 = 0;
     grblBfsize = 15;
     x_offset = 0.0;
     y_offset = 0.0;
@@ -185,6 +192,7 @@ public:
   virtual void terminate(gecoEvent* ev);
   virtual void activate(gecoEvent* ev);
 
+  void read_grbl_response();
   int  handleGrblResponse();
   void parseGrblStatus(const char* grblStatus);
   void startCycle();
