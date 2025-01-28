@@ -194,7 +194,6 @@ int gecoMTCGrblAdapter::cmd(int &i, int objc, Tcl_Obj *const objv[])
 
     // waits until homing-cycle is completed
     Tcl_DString *status = new Tcl_DString;
-    ;
     Tcl_DStringInit(status);
     Tcl_Gets(grblChan, status);
     while (strcmp(Tcl_DStringValue(status), "") == 0)
@@ -205,6 +204,13 @@ int gecoMTCGrblAdapter::cmd(int &i, int objc, Tcl_Obj *const objv[])
     }
     Tcl_DStringFree(status);
     delete status;
+
+    // empty serial buffer and send G92
+    read_grbl_response();
+    sendGcode("G92 X0 Y0 Z0");
+    sendData("|block|G92 X0 Y0 Z0");
+
+    // inform agent
     sendData("|msg|homing cycle|homing cycle completed");
     sendData("|avail|AVAILABLE");
     sendData("|grbl|NORMAL|Connection|||grbl controller connected");
