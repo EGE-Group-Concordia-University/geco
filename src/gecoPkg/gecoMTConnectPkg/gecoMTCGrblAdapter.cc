@@ -435,9 +435,9 @@ Tcl_DString *gecoMTCGrblAdapter::SHDR(bool forceSend)
 
   Tcl_WriteChars(grblChan, "?", -1);
   Tcl_Flush(grblChan);
-  //Tcl_Gets(grblChan, grblResp);
   read_grbl_response();
-  cout << Tcl_DStringValue(grblResp) << "\n";
+  if (verbose)
+    cout << Tcl_DStringValue(grblResp) << "\n";
   if (strcmp(Tcl_DStringValue(grblResp), "") == 0)
   {
     if (n_fail == 3)
